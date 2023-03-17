@@ -180,8 +180,14 @@ class Database():
         except Exception:
             raise Exception
         
-    def add_playlist_song():
-        pass
+    def add_playlist_song(playlist_id, song_id):
+        today = date.today().strftime("%d/%m/%Y")
+
+        try:
+            cursor.execute("INSERT INTO playlist_songs (playlist_id, song_id, created) VALUES (%s, %s, %s)", (playlist_id, song_id, today))
+            cnx.commit()
+        except Exception:
+            raise Exception
 
 
 class WelcomeScreen(MDScreen):
@@ -698,6 +704,7 @@ class AITextArtScreen(MDScreen):
 class MusicPlayer(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.playlist = False
         self.counter = 0
         self.song_name = "None"
         self.paused = False
@@ -911,6 +918,7 @@ class BassBoost():
 class SearchScreen(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.song_id = None
 
         self.songs = Database.music(limit = 27)
 
@@ -933,10 +941,13 @@ class SearchScreen(MDScreen):
         self.list = MDList()
         self.scroll.add_widget(self.list)
 
+
         for i in self.songs:
-            self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(icon = 'dots-vertical', on_press = self.dropdown), ImageLeftWidget(source = i[3]), text=i[1], secondary_text = i[2])
+            self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(id = str(i[0]), icon = 'dots-vertical', on_press = self.dropdown), ImageLeftWidget(source = i[3]), text=i[1], secondary_text = i[2])
             self.list.add_widget(self.sugg_songs)
             self.sugg_songs.bind(on_release = self.musicplayer)
+
+       #self.menu.open()
 
         #self.list.add_widget(MDLabel(text='gaga\ngagaga\ngagagag\nagagagagaga', size_hint = (2,2)))
         
@@ -948,7 +959,7 @@ class SearchScreen(MDScreen):
 
         if len(filtered_items) > 0:
           for it in filtered_items:
-            self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(icon = 'dots-vertical', on_press = self.dropdown), ImageLeftWidget(source = it[3]), text=it[1], secondary_text = it[2])
+            self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(id = str(it[0]), icon = 'dots-vertical', on_press = self.dropdown), ImageLeftWidget(source = it[3]), text=it[1], secondary_text = it[2])
             self.list.add_widget(self.sugg_songs)
             self.sugg_songs.bind(on_release = self.musicplayer)
 
@@ -972,23 +983,56 @@ class SearchScreen(MDScreen):
         self.manager.current = 'musicplayer'
 
     def dropdown(self, instance):
-        print("entered")
-        menu_items = [
+        self.song_id = int(instance.id)
+        self.menu_items = [
         {
             'text' : 'Add to Queue',            
             'viewclass' : 'OneLineListItem'
         },
         {
              'text' : 'Add to Playlist',
-             'viewclass' : 'OneLineListItem'
+             'viewclass' : 'OneLineListItem',
+             'on_release' :  self.playlists
         }
         ]
-
+        #print(self.sugg_songs.children)
         self.menu = MDDropdownMenu(
             caller = instance,
-            items = menu_items,
-            width_mult = 4)
+            items = self.menu_items,
+            width_mult = 4) 
         self.menu.open()
+        print("opened")
+
+    def playlists(self):
+        #self.scroll2 = MDScrollView()
+        self.box = MDBoxLayout(size_hint_y = None, orientation = 'vertical', adaptive_height = True)
+        #self.scroll2.add_widget(self.box)
+        print(self.plays)
+        for k in self.plays:
+            print(k)
+            self.play_name = OneLineListItem(id = str(k[0]), text=k[1])
+            self.play_name.bind(on_press = self.select_playlist)
+            self.box.add_widget(self.play_name)
+
+        self.dialog = MDDialog(
+            title = "Select Playlist",
+            type = "custom",
+            auto_dismiss = True,
+            content_cls = self.box
+        )
+        self.dialog.open()
+
+
+    def select_playlist(self, instance):
+        Database.add_playlist_song(playlist_id = int(instance.id), song_id = int(self.song_id))
+        self.dialog.dismiss()
+        toast(text="Song Added To Playlist")
+
+    def on_pre_enter(self):
+        self.account = Database.acc_details()[0]
+        self.plays = Database.playlists_info(username = self.account)
+        print(self.plays)
+
 
 class Playlist(MDScreen):
     def __init__(self, *args, **kwargs):
