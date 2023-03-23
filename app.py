@@ -262,10 +262,13 @@ class LoginScreen(MDScreen, MDFloatLayout):
 class MainScreen(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        with self.canvas:
+
+        with self.canvas.before:
+            print(self.pos, self.size, Window.size)
             Color(0,0,0.3, mode = 'hex')
-            Rectangle(texture = Gradient.vertical([0,0,0,0], [0,0,1,0.5]),
+            self.rect = Rectangle(texture = Gradient.vertical([0,0,0,0], [0,0,1,0.5]),
                      size=Window.size)
+        Window.bind(on_resize = self.resize)
         #global logged_in
         #if logged_in:
 
@@ -422,6 +425,10 @@ class MainScreen(MDScreen):
               self.tamil_section.add_widget(self.card5)
 
         self.add_widget(self.nav_layout)
+
+    def resize(self, window, width, height):
+        print("Resizing")
+        self.rect.size = Window.size
 
     def logout(self, dt):
         self.manager.remove_widget(MainScreen(name='main'))
