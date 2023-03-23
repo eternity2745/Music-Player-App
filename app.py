@@ -75,8 +75,8 @@ from colorthief import ColorThief
 from PIL import Image as Im
 from kivymd.uix.menu import MDDropdownMenu
 
-Window.fullscreen = 'auto'
-Window.borderless = True
+#Window.fullscreen = 'auto'
+#Window.borderless = True
 
 Config.set('graphics', 'position', 'custom')
 Config.set('graphics', 'left', -1500)
@@ -721,7 +721,8 @@ class MusicPlayer(MDScreen):
         self.screen_switched = False
         self.upcoming = None
         self.prev_screen = None
-        self.queue = None
+        self.queue = False
+        self.queue_songs = []
 
     def on_pre_enter(self, *args):
         self.song = Database.get_song_detail(name=self.song_name)
@@ -839,15 +840,16 @@ class MusicPlayer(MDScreen):
             Clock.unschedule(self.update_time)
 
             if self.queue != False:
-                if self.queue_songs != None:
-                    self.sn = self.playlist_songs[0][1]
+                if len(self.queue_songs) != 0:
+                    print(self.queue_songs)
+                    self.sn = self.queue_songs[0][1]
                 
-                    self.bg_image.source = self.playlist_songs[0][3]
-                    self.song_title.text = self.playlist_songs[0][1]
-                    self.song_author.text = self.playlist_songs[0][2]
-                    self.song_image.source = self.playlist_songs[0][3]
+                    self.bg_image.source = self.queue_songs[0][3]
+                    self.song_title.text = self.queue_songs[0][1]
+                    self.song_author.text = self.queue_songs[0][2]
+                    self.song_image.source = self.queue_songs[0][3]
 
-                    self.sound = SoundLoader.load(self.playlist_songs[0][4])
+                    self.sound = SoundLoader.load(self.queue_songs[0][4])
                     self.start_time.text = "00:00"
                     self.end_time.text = self.convert_seconds_to_min(self.sound.length)
                     self.sound.play()
@@ -857,9 +859,9 @@ class MusicPlayer(MDScreen):
 
                     Clock.schedule_interval(self.update_slider, 1)
                     Clock.schedule_interval(self.update_time, 1)
-                    self.playlist_songs.pop(0)
+                    self.queue_songs.pop(0)
                     if len(self.queue_songs) == 0:
-                        self.queue_songs = None
+                        self.queue_songs = []
                         self.queue = False  
 
             elif self.playlist:
@@ -1048,7 +1050,8 @@ class SearchScreen(MDScreen):
         self.menu_items = [
         {
             'text' : 'Add to Queue',            
-            'viewclass' : 'OneLineListItem'
+            'viewclass'  : 'OneLineListItem',
+            'on_release' :  self.queue
         },
         {
              'text' : 'Add to Playlist',
@@ -1083,6 +1086,11 @@ class SearchScreen(MDScreen):
         )
         self.dialog.open()
 
+    def queue(self):
+        self.song_info = Database.get_song_detail(id = int(self.song_id))
+        self.manager.get_screen('musicplayer').queue = True
+        self.manager.get_screen('musicplayer').queue_songs.append(self.song_info)
+        toast(text="Song Added To Queue")
 
     def select_playlist(self, instance):
         Database.add_playlist_song(playlist_id = int(instance.id), song_id = int(self.song_id))
