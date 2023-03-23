@@ -266,7 +266,7 @@ class MainScreen(MDScreen):
         with self.canvas.before:
             print(self.pos, self.size, Window.size)
             Color(0,0,0.3, mode = 'hex')
-            self.rect = Rectangle(texture = Gradient.vertical([0,0,0,0], [0,0,0.1,0.1], [0,0,1,0.5]),
+            self.rect = Rectangle(texture = Gradient.vertical([0,0,0.3,0.3], [0,0,0.5,0.5], [0,0,1,0.5]),
                      size=Window.size)
         Window.bind(on_resize = self.resize)
         #global logged_in
