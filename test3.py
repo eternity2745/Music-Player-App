@@ -84,6 +84,8 @@ class MainApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.screen = PreviousMDIcons()
+        self.theme_cls.theme_style = 'Dark'
+        self.theme_cls.material_style = "M3"
 
     def build(self):
         return self.screen

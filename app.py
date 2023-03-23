@@ -266,7 +266,7 @@ class MainScreen(MDScreen):
         with self.canvas.before:
             print(self.pos, self.size, Window.size)
             Color(0,0,0.3, mode = 'hex')
-            self.rect = Rectangle(texture = Gradient.vertical([0,0,0,0], [0,0,1,0.5]),
+            self.rect = Rectangle(texture = Gradient.vertical([0,0,0,0], [0,0,0.1,0.1], [0,0,1,0.5]),
                      size=Window.size)
         Window.bind(on_resize = self.resize)
         #global logged_in
@@ -536,7 +536,7 @@ class MainScreen(MDScreen):
 
             self.start = MDLabel(text = "00:00", size_hint_x = 0.2, font_style = "Subtitle2", halign = "right")
             self.sub_layout5_2.add_widget(self.start)
-            self.slider = MDSlider(size_hint_x = 0.7, cursor_image = 'images/test.png')
+            self.slider = MDSlider(size_hint_x = 0.7, cursor_image = 'images/test.png', hint = False)
             self.sub_layout5_2.add_widget(self.slider)
             self.end = MDLabel(text = "00:00", size_hint_x = 0.1, font_style = "Subtitle2")
             self.sub_layout5_2.add_widget(self.end)
@@ -547,7 +547,7 @@ class MainScreen(MDScreen):
             self.sub_layout_3_1 = MDBoxLayout(orientation = 'horizontal', size_hint = (None, None), height = Window.minimum_height, width = Window.minimum_width)
             self.sub_layout_3.add_widget(self.sub_layout_3_1)
 
-            self.switch = MDIconButton(icon='music', on_press = lambda x: Thread(target=self.booster, name='Song Booster').start())
+            self.switch = MDIconButton(icon='music-accidental-double-flat', on_press = lambda x: Thread(target=self.booster, name='Song Booster').start())
             self.sub_layout_3_1.add_widget(self.switch)
             #self.sub_layout_3_1.add_widget(MDIconButton(icon='play'))
             #self.sub_layout_3_1.add_widget(MDIconButton(icon='skip-next'))
