@@ -1,53 +1,95 @@
-from kivy.app import App
-from kivy.clock import Clock, _default_time as time  # ok, no better way to use the same clock as kivy, hmm
 from kivy.lang import Builder
-from kivy.factory import Factory
-from kivy.uix.button import Button
-from kivy.properties import ListProperty
+from kivy.properties import StringProperty
+from kivy.uix.screenmanager import Screen
 
-from threading import Thread
-from time import sleep
+from kivymd.icon_definitions import md_icons
+from kivymd.app import MDApp
+from kivymd.uix.list import OneLineIconListItem
 
-MAX_TIME = 5.
 
-kv = '''
-BoxLayout:
-    ScrollView:
-        GridLayout:
-            cols: 1
-            id: target
-            size_hint: 1, None
-            height: self.minimum_height
+Builder.load_string(
+    '''
+#:import images_path kivymd.images_path
 
-    MyButton:
-        text: 'run'
 
-<MyLabel@Label>:
-    size_hint_y: None
-    height: self.texture_size[1]
+<CustomOneLineIconListItem>
+
+    IconLeftWidget:
+        icon: root.icon
+
+
+<PreviousMDIcons>
+
+    MDBoxLayout:
+        orientation: 'vertical'
+        spacing: dp(10)
+        padding: dp(20)
+
+        MDBoxLayout:
+            adaptive_height: True
+
+            MDIconButton:
+                icon: 'magnify'
+
+            MDTextField:
+                id: search_field
+                hint_text: 'Search icon'
+                on_text: root.set_list_md_icons(self.text, True)
+
+        RecycleView:
+            id: rv
+            key_viewclass: 'viewclass'
+            key_size: 'height'
+
+            RecycleBoxLayout:
+                padding: dp(10)
+                default_size: None, dp(48)
+                default_size_hint: 1, None
+                size_hint_y: None
+                height: self.minimum_height
+                orientation: 'vertical'
 '''
+)
 
-class MyButton(Button):
-    def on_press(self, *args):
-        x = Thread(target=self.worker, daemon=True, name='monitor').start()
 
-    def worker(self):
-        sleep(5) # blocking operation
-        App.get_running_app().consommables.append("done")
+class CustomOneLineIconListItem(OneLineIconListItem):
+    icon = StringProperty()
 
-class PubConApp(App):
-    consommables = ListProperty([])
+
+class PreviousMDIcons(Screen):
+
+    def set_list_md_icons(self, text="", search=False):
+        '''Builds a list of icons for the screen MDIcons.'''
+
+        def add_icon_item(name_icon):
+            self.ids.rv.data.append(
+                {
+                    "viewclass": "CustomOneLineIconListItem",
+                    "icon": name_icon,
+                    "text": name_icon,
+                    "callback": lambda x: x,
+                }
+            )
+
+        self.ids.rv.data = []
+        for name_icon in md_icons.keys():
+            if search:
+                if text in name_icon:
+                    add_icon_item(name_icon)
+            else:
+                add_icon_item(name_icon)
+
+
+class MainApp(MDApp):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.screen = PreviousMDIcons()
 
     def build(self):
-        Clock.schedule_interval(self.consume, 0)
-        return Builder.load_string(kv)
+        return self.screen
 
-    def consume(self, *args):
-            if len(self.consommables) > 0:
-                item = self.consommables.pop(0)  # i want the first one
-                label = Factory.MyLabel(text=item)
-                self.root.ids.target.add_widget(label)
+    def on_start(self):
+        self.screen.set_list_md_icons()
 
-if __name__ == '__main__':
-    PubConApp().run()
-    
+
+MainApp().run()
