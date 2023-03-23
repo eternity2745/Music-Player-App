@@ -717,6 +717,7 @@ class AITextArtScreen(MDScreen):
 class MusicPlayer(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.stop = False
         self.next_song = None
         self.previous_song = None
         self.playlist = False
@@ -861,8 +862,10 @@ class MusicPlayer(MDScreen):
         if self.queue != False:
             if len(self.queue_songs) != 0:
                 print(self.queue_songs)
-                if len(self.queue_songs) != 1:
+                if len(self.queue_songs) != 1 and self.stop == False:
                     self.previous_song = self.queue_songs[0]
+
+                self.stop = False
                 self.sn = self.queue_songs[0][1]
             
                 self.bg_image.source = self.queue_songs[0][3]
@@ -887,9 +890,10 @@ class MusicPlayer(MDScreen):
 
         elif self.playlist:
             if self.playlist_songs != None:
-                if len(self.playlist_songs) != 1:
+                if len(self.playlist_songs) != 1 and self.stop == False:
                     self.previous_song = self.playlist_songs[0]
 
+                self.stop = False
                 self.sn = self.playlist_songs[0][1]
             
                 self.bg_image.source = self.playlist_songs[0][3]
@@ -915,7 +919,10 @@ class MusicPlayer(MDScreen):
         else:
             song = Database.music(limit=1)
             print("On stop:", song)
-            self.previous_song = Database.get_song_detail(name = self.sn)
+            if self.stop == False:
+                self.previous_song = Database.get_song_detail(name = self.sn)
+
+            self.stop = False
             self.sn = song[0][1]
             
             self.bg_image.source = song[0][3]
@@ -990,8 +997,8 @@ class MusicPlayer(MDScreen):
         self.manager.get_screen("main").end.text = self.convert_seconds_to_min(self.sound.length)
         MainScreen.on_pre_enter
 
-        notification.notify(app_icon = None, title = self.song_title.text, app_name = "Music Player", 
-                            message = self.song_author.text, timeout = 10, toast = False)
+        #notification.notify(app_icon = None, title = self.song_title.text, app_name = "Music Player", 
+                            #message = self.song_author.text, timeout = 10, toast = False)
 
     def on_stop(self, dt):
         print('entered stop')
@@ -1092,6 +1099,8 @@ class MusicPlayer(MDScreen):
 
             notification.notify(app_icon = None, title = self.song_title.text, app_name = "Music Player", 
                                 message = self.song_author.text, timeout = 10, toast = False)
+            
+            self.stop = True
  
         elif self.new == True:
             self.new = False
