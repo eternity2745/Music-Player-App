@@ -718,8 +718,8 @@ class MusicPlayer(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.stop = False
-        self.next_song = None
-        self.previous_song = None
+        self.next_song = []
+        self.previous_song = []
         self.playlist = False
         self.playlist_songs = None
         self.counter = 0
@@ -742,6 +742,8 @@ class MusicPlayer(MDScreen):
         print(self.upcoming)
         if self.finished == True and self.counter == 0:
             print(1)
+            self.previous_song.append(self.song)
+            self.stop = True
             self.counter += 1
             self.sn = self.song[1]
             #print(self.song)
@@ -800,6 +802,7 @@ class MusicPlayer(MDScreen):
             print(100)
             self.screen_switched = False
             self.sn = self.song[1]
+            self.new = True
             self.sound.stop()
             self.bg_image.source = self.song[3]
             self.song_title.text = self.song[1]
@@ -863,7 +866,7 @@ class MusicPlayer(MDScreen):
             if len(self.queue_songs) != 0:
                 print(self.queue_songs)
                 if len(self.queue_songs) != 1 and self.stop == False:
-                    self.previous_song = self.queue_songs[0]
+                    self.previous_song.append(self.queue_songs[0])
 
                 self.stop = False
                 self.sn = self.queue_songs[0][1]
@@ -890,8 +893,9 @@ class MusicPlayer(MDScreen):
 
         elif self.playlist:
             if self.playlist_songs != None:
+                print(self.playlist_songs)
                 if len(self.playlist_songs) != 1 and self.stop == False:
-                    self.previous_song = self.playlist_songs[0]
+                    self.previous_song.append(self.playlist_songs[0])
 
                 self.stop = False
                 self.sn = self.playlist_songs[0][1]
@@ -920,7 +924,7 @@ class MusicPlayer(MDScreen):
             song = Database.music(limit=1)
             print("On stop:", song)
             if self.stop == False:
-                self.previous_song = Database.get_song_detail(name = self.sn)
+                self.previous_song.append(Database.get_song_detail(name = self.sn))
 
             self.stop = False
             self.sn = song[0][1]
@@ -965,16 +969,17 @@ class MusicPlayer(MDScreen):
         self.slider.value = 0
         Clock.unschedule(self.update_slider)
         Clock.unschedule(self.update_time)
-        print("On stop:", self.previous_song)
+        print("On previous:", self.previous_song)
         #self.previous_song = Database.get_song_detail(name = self.sn)
-        self.sn = self.previous_song[1]
+        print(self.sn)
+        self.sn = self.previous_song[0][1]
         
-        self.bg_image.source = self.previous_song[3]
-        self.song_title.text = self.previous_song[1]
-        self.song_author.text = self.previous_song[2]
-        self.song_image.source = self.previous_song[3]
+        self.bg_image.source = self.previous_song[0][3]
+        self.song_title.text = self.previous_song[0][1]
+        self.song_author.text = self.previous_song[0][2]
+        self.song_image.source = self.previous_song[0][3]
 
-        self.sound = SoundLoader.load(self.previous_song[4])
+        self.sound = SoundLoader.load(self.previous_song[0][4])
         self.start_time.text = "00:00"
         self.end_time.text = self.convert_seconds_to_min(self.sound.length)
         self.sound.play()
@@ -988,12 +993,10 @@ class MusicPlayer(MDScreen):
         self.manager.get_screen("main").is_playing = self.paused
         self.manager.get_screen("main").song_name = self.song_title.text
         self.manager.get_screen("main").song_n.text = self.song_title.text
-        print(self.manager.get_screen("main").song_n.text, self.song_title.text)
         self.manager.get_screen("main").song_author = self.song_author.text
         self.manager.get_screen("main").song_auth.text = self.song_author.text
         self.manager.get_screen("main").song_image = self.song_image.source
         self.manager.get_screen("main").img.source = self.song_image.source
-        print(self.manager.get_screen("main").song_image, self.song_image.source)
         self.manager.get_screen("main").end.text = self.convert_seconds_to_min(self.sound.length)
         MainScreen.on_pre_enter
 
@@ -1104,6 +1107,7 @@ class MusicPlayer(MDScreen):
  
         elif self.new == True:
             self.new = False
+            print("Left stop")
 
     def update_slider(self, dt):
         self.slider.value = (self.sound.get_pos() / self.sound.length) * 100
