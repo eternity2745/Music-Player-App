@@ -734,6 +734,7 @@ class MusicPlayer(MDScreen):
         self.queue = False
         self.queue_songs = []
         self.new = False
+        self.counter2 = 0
 
     def on_pre_enter(self, *args):
         self.song = Database.get_song_detail(name=self.song_name)
@@ -785,7 +786,6 @@ class MusicPlayer(MDScreen):
             self.prev_button.bind(on_press =self.previous)
 
             self.sound.bind(on_stop=self.on_stop)
-            print('in player', self.sound.state)
             self.play_button.icon = ('play' if self.sound.state == 'stop' else 'pause')
             self.sound.play()
             Clock.schedule_interval(self.update_slider, 1)
@@ -854,6 +854,7 @@ class MusicPlayer(MDScreen):
                 self.paused = False   
 
     def next(self, dt):
+        print(self.next_song, self.previous_song)
         self.new = True
         self.paused = False
         self.play_button.icon = 'play'
@@ -861,12 +862,38 @@ class MusicPlayer(MDScreen):
         self.slider.value = 0
         Clock.unschedule(self.update_slider)
         Clock.unschedule(self.update_time)
+        self.counter2 += 1
 
-        if self.queue != False:
+        if len(self.next_song) != 0:
+            if self.stop == False:
+                self.previous_song.insert(0, Database.get_song_detail(name = self.sn))
+
+            self.stop = False
+            self.sn = self.next_song[0][1]
+            
+            self.bg_image.source = self.next_song[0][3]
+            self.song_title.text = self.next_song[0][1]
+            self.song_author.text = self.next_song[0][2]
+            self.song_image.source = self.next_song[0][3]
+
+            self.sound = SoundLoader.load(self.next_song[0][4])
+            self.start_time.text = "00:00"
+            self.end_time.text = self.convert_seconds_to_min(self.sound.length)
+            self.sound.play()
+            self.sound.bind(on_stop = self.on_stop)
+            self.play_button.icon = 'pause'
+            self.play_button.bind(on_press = self.play_pause)
+
+            Clock.schedule_interval(self.update_slider, 1)
+            Clock.schedule_interval(self.update_time, 1)
+            self.next_song.pop(0)
+
+        elif self.queue != False:
             if len(self.queue_songs) != 0:
                 print(self.queue_songs)
+                self.stop = False
                 if len(self.queue_songs) != 1 and self.stop == False:
-                    self.previous_song.append(self.queue_songs[0])
+                    self.previous_song.insert(0, self.queue_songs[0])
 
                 self.stop = False
                 self.sn = self.queue_songs[0][1]
@@ -893,9 +920,12 @@ class MusicPlayer(MDScreen):
 
         elif self.playlist:
             if self.playlist_songs != None:
+                self.stop = False
                 print(self.playlist_songs)
+                print(len(self.playlist_songs), self.stop)
                 if len(self.playlist_songs) != 1 and self.stop == False:
-                    self.previous_song.append(self.playlist_songs[0])
+                    print(self.playlist_songs[0])
+                    self.previous_song.insert(0, self.playlist_songs[0])
 
                 self.stop = False
                 self.sn = self.playlist_songs[0][1]
@@ -924,7 +954,7 @@ class MusicPlayer(MDScreen):
             song = Database.music(limit=1)
             print("On stop:", song)
             if self.stop == False:
-                self.previous_song.append(Database.get_song_detail(name = self.sn))
+                self.previous_song.insert(0, Database.get_song_detail(name = self.sn))
 
             self.stop = False
             self.sn = song[0][1]
@@ -961,8 +991,9 @@ class MusicPlayer(MDScreen):
                             #message = self.song_author.text, timeout = 10, toast = False)
 
     def previous(self, dt):
+        print(self.next_song, self.previous_song)
         self.new = True
-        self.next_song = Database.get_song_detail(name = self.sn)
+        self.next_song.insert(0, Database.get_song_detail(name = self.sn))
         self.paused = False
         self.play_button.icon = 'play'
         self.sound.stop()
@@ -1000,13 +1031,12 @@ class MusicPlayer(MDScreen):
         self.manager.get_screen("main").end.text = self.convert_seconds_to_min(self.sound.length)
         MainScreen.on_pre_enter
 
+        self.previous_song.pop(0)
+
         #notification.notify(app_icon = None, title = self.song_title.text, app_name = "Music Player", 
                             #message = self.song_author.text, timeout = 10, toast = False)
 
     def on_stop(self, dt):
-        print('entered stop')
-        print(self.slider.value)
-        print(self.paused)
         if self.paused == False and self.slider.value > 98.5 and self.new == False:
             self.paused = False
             self.play_button.icon = 'play'
@@ -1107,7 +1137,8 @@ class MusicPlayer(MDScreen):
  
         elif self.new == True:
             self.new = False
-            print("Left stop")
+            self.stop = True
+
 
     def update_slider(self, dt):
         self.slider.value = (self.sound.get_pos() / self.sound.length) * 100
