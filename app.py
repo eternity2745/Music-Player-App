@@ -477,7 +477,6 @@ class MainScreen(MDScreen):
         self.add_widget(self.nav_layout)
 
     def resize(self, window, width, height):
-        print("Resizing")
         self.rect.size = Window.size
 
     def logout(self, dt):
@@ -511,9 +510,76 @@ class MainScreen(MDScreen):
             # self.manager.get_screen("musicplayer").play_button.icon == self.play_pause.icon
         self.manager.current = 'musicplayer'
 
-    def song_clicked(self):
-        song = self.song_name
-        return song
+    def next(self, dt):
+        self.manager.get_screen("musicplayer").prev_button.disabled = False
+        self.skip_prev.disabled = False
+        self.manager.get_screen("musicplayer").clicked = False
+        self.manager.get_screen("musicplayer").new = True
+        self.manager.get_screen("musicplayer").paused = False
+        self.manager.get_screen("musicplayer").play_button.icon = 'play'
+        self.manager.get_screen("musicplayer").slider.value = 0
+        self.manager.get_screen("musicplayer").sound.stop()
+
+    def previous(self, dt):
+        self.manager.get_screen("musicplayer").clicked = False
+        self.manager.get_screen("musicplayer").prev = True
+        self.manager.get_screen("musicplayer").new = True
+        self.manager.get_screen("musicplayer").index -= 1
+        if self.manager.get_screen("musicplayer").index == -(len(self.manager.get_screen("musicplayer").played_songs) - 1):
+            self.manager.get_screen("musicplayer").prev_button.disabled = True
+            self.skip_prev.disabled = True
+        else:
+            self.manager.get_screen("musicplayer").prev_button.disabled = False
+            self.skip_prev.disabled = False
+        song = self.manager.get_screen(
+            "musicplayer").played_songs[self.manager.get_screen("musicplayer").index]
+
+        self.manager.get_screen("musicplayer").paused = False
+        self.manager.get_screen("musicplayer").play_button.icon = 'play'
+        self.manager.get_screen("musicplayer").sound.stop()
+        self.manager.get_screen("musicplayer").slider.value = 0
+        Clock.unschedule(self.manager.get_screen("musicplayer").update_slider)
+        Clock.unschedule(self.manager.get_screen("musicplayer").update_time)
+
+        self.manager.get_screen("musicplayer").sn = song[1]
+
+        self.manager.get_screen("musicplayer").bg_image.source = song[3]
+        self.manager.get_screen("musicplayer").song_title.text = song[1]
+        self.manager.get_screen("musicplayer").song_author.text = song[2]
+        self.manager.get_screen("musicplayer").song_image.source = song[3]
+
+        self.manager.get_screen(
+            "musicplayer").sound = SoundLoader.load(song[4])
+        self.manager.get_screen("musicplayer").start_time.text = "00:00"
+        self.manager.get_screen("musicplayer").end_time.text = self.convert_seconds_to_min(
+            self.manager.get_screen("musicplayer").sound.length)
+        self.manager.get_screen("musicplayer").sound.play()
+        self.manager.get_screen("musicplayer").sound.bind(
+            on_stop=self.manager.get_screen("musicplayer").on_stop)
+        self.manager.get_screen("musicplayer").play_button.icon = 'pause'
+        self.manager.get_screen("musicplayer").play_button.bind(
+            on_press=self.manager.get_screen("musicplayer").play_pause)
+
+        Clock.schedule_interval(self.manager.get_screen(
+            "musicplayer").update_slider, 1)
+        Clock.schedule_interval(
+            self.manager.get_screen("musicplayer").update_time, 1)
+        self.manager.get_screen("musicplayer").prev = False
+        self.sound = self.manager.get_screen("musicplayer").sound
+        self.is_playing = self.manager.get_screen("musicplayer").paused
+        self.song_name = self.manager.get_screen("musicplayer").song_title.text
+        self.song_n.text = self.manager.get_screen(
+            "musicplayer").song_title.text
+        self.song_author = self.manager.get_screen(
+            "musicplayer").song_author.text
+        self.song_auth.text = self.manager.get_screen(
+            "musicplayer").song_author.text
+        self.song_image = self.manager.get_screen(
+            "musicplayer").song_image.source
+        self.img.source = self.manager.get_screen(
+            "musicplayer").song_image.source
+        self.end.text = self.manager.get_screen("musicplayer").convert_seconds_to_min(
+            self.manager.get_screen("musicplayer").sound.length)
 
     def search(self):
         print(1339013190)
@@ -586,11 +652,14 @@ class MainScreen(MDScreen):
             # self.sub_layout2_1_1.add_widget(MDLabel(text = "Song Name", halign = "left"))
             self.skip_prev = MDIconButton(
                 icon='skip-previous', halign="center")
+            self.skip_prev.bind(
+                on_press=self.previous)
             self.sub_layout2_1_1.add_widget(self.skip_prev)
             self.play_pause = MDIconButton(icon='play', halign="center", icon_color=[
                                            0, 0, 0, 1], theme_icon_color="Custom", md_bg_color="white")
             self.sub_layout2_1_1.add_widget(self.play_pause)
             self.skip_next = MDIconButton(icon='skip-next', halign="center")
+            self.skip_next.bind(on_press=self.next)
             self.sub_layout2_1_1.add_widget(self.skip_next)
             # self.sub_layout2_1_1.add_widget(MDLabel(text = "Author Name", halign = "left"))
 
@@ -816,7 +885,7 @@ class MusicPlayer(MDScreen):
         self.prev_screen = None
         self.queue = False
         self.queue_songs = []
-        self.new = False
+        self.new = True
         self.counter2 = 0
         self.counter3 = 0
         self.played_songs = []
@@ -956,6 +1025,8 @@ class MusicPlayer(MDScreen):
                     self.paused = False
 
     def next(self, dt):
+        self.prev_button.disabled = False
+        self.manager.get_screen("main").skip_prev.disabled = False
         self.clicked = False
         self.new = True
         self.paused = False
@@ -1024,8 +1095,8 @@ class MusicPlayer(MDScreen):
         # message = self.song_author.text, timeout = 10, toast = False)
 
     def on_stop(self, dt):
-        self.prev_button.disabled = False
-        print("self.new:", self.new)
+        print(self.paused, self.slider.value, self.prev, self.clicked)
+        print("self.new:", self.new, "", self.index)
         if self.new == True and self.index != -1 and self.prev == False:
             Clock.unschedule(self.update_slider)
             Clock.unschedule(self.update_time)
@@ -1325,6 +1396,7 @@ class SearchScreen(MDScreen):
         self.manager.get_screen('musicplayer').playlist_songs = None
         self.manager.get_screen('musicplayer').prev_screen = 'search'
         self.manager.get_screen("musicplayer").clicked = True
+        self.manager.get_screen('musicplayer').new = True
         self.manager.current = 'musicplayer'
 
     def dropdown(self, instance):
@@ -1435,7 +1507,7 @@ class Playlist(MDScreen):
 
     def choose(self, dt):
         self.play_img = filechooser.open_file()
-        print(self.play_img, self.play_img[0])
+        # print(self.play_img, self.play_img[0])
         try:
             self.upload.background_normal = self.play_img[0]
             print(self.play_img[0], self.upload.background_normal)
@@ -1448,10 +1520,11 @@ class Playlist(MDScreen):
     def create(self, dt):
         print(self.upload.state)
         if self.play_n.text != '' and self.upload.state == 'normal' and len(self.play_n.text) <= 30:
+            total = Database.playlists_info(username=self.username)
             today = date.today()
             t = today.strftime("%d/%m/%Y")
 
-            self.card_new = MDCard(orientation='vertical', md_bg_color=(
+            self.card_new = MDCard(id=str(len(total)+1), orientation='vertical', md_bg_color=(
                 1, 1, 1, 1), height="350dp", width="300dp", size_hint=(None, None), spacing="10dp", padding="20dp")
             self.sub_layout.add_widget(self.card_new)
             self.card_new.bind(on_press=self.playlist_songs)
@@ -1544,15 +1617,26 @@ class Playlist(MDScreen):
             self.prev_len = len(self.playlists)
 
     def playlist_songs(self, instance):
-        self.manager.get_screen(
-            "playlist_songs").playlist_id = int(instance.id)
-        self.manager.get_screen(
-            "playlist_songs").bg_img = instance.children[2].source
-        self.manager.get_screen(
-            "playlist_songs").play_name = instance.children[1].text
-        self.manager.get_screen(
-            "playlist_songs").play_date = instance.children[0].text
-        self.manager.current = 'playlist_songs'
+        try:
+            self.manager.get_screen(
+                "playlist_songs").playlist_id = int(instance.id)
+            self.manager.get_screen(
+                "playlist_songs").bg_img = instance.children[2].source
+            self.manager.get_screen(
+                "playlist_songs").play_name = instance.children[1].text
+            self.manager.get_screen(
+                "playlist_songs").play_date = instance.children[0].text
+            self.manager.current = 'playlist_songs'
+        except:
+            self.manager.get_screen(
+                "playlist_songs").playlist_id = int(self.card_new.id)
+            self.manager.get_screen(
+                "playlist_songs").bg_img = self.img_new.source
+            self.manager.get_screen(
+                "playlist_songs").play_name = self.play_name_new.text
+            self.manager.get_screen(
+                "playlist_songs").play_date = self.play_date_new.text
+            self.manager.current = 'playlist_songs'
 
 
 class Playlist_Songs(MDScreen):
@@ -1668,6 +1752,7 @@ class Playlist_Songs(MDScreen):
                 'musicplayer').playlist_songs = self.song_infos[self.index::]
         except:
             self.manager.get_screen('musicplayer').playlist_songs = None
+        self.manager.get_screen('musicplayer').new = True
         self.manager.get_screen('musicplayer').prev_screen = 'playlist_songs'
         self.manager.get_screen(
             "musicplayer").song_name = instance.children[4].text
@@ -1697,6 +1782,11 @@ class Playlist_Songs(MDScreen):
         self.manager.transition.direction = 'right'
         self.manager.current = 'playlist'
         self.manager.transition.direction = 'left'
+
+
+class Settings(MDScreen):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class spotify(MDApp):
