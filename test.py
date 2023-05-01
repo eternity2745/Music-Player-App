@@ -73,6 +73,16 @@ from colorthief import ColorThief
 from PIL import Image as Im
 
 
+class MiniPlayer(MDCard):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.pos_hint = {'center_x': 0.5, 'bottom': 0.1}
+        self.size_hint = (1, 0.1)
+        self.hel = MDLabel(text="hello")
+        self.add_widget(self.hel)
+
+
 class Settings(MDScreen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -92,6 +102,39 @@ class Settings(MDScreen):
         self.main.add_widget(MDLabel(size_hint_y=2, text=""))
 
 
+class MHmm(MDScreen):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.player = MiniPlayer()
+        # player.hel.text = "hallaaaaa"
+        self.add_widget(self.player)
+        self.add_widget(MDIconButton(text='click', on_press=self.clicked))
+        self.add_widget(MDIconButton(text='kak', pos_hint={
+                        'center_x': 0.5, 'center_y': 0.5}, on_press=self.back))
+
+    def clicked(self, dt):
+        self.player.hel.text = 'halllaaa'
+
+    def back(self, dt):
+        self.manager.current = 'orf'
+
+
+class ORF(MDScreen):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.player = MiniPlayer()
+        self.add_widget(self.player)
+        self.add_widget(MDIconButton(text="okay", on_press=self.back))
+
+    def on_pre_enter(self):
+        self.player.hel.text = "okaayyy"
+
+    def back(self, dt):
+        self.manager.current = "mhm"
+
+
 class Test(MDApp):
 
     def build(self):
@@ -100,7 +143,8 @@ class Test(MDApp):
         self.theme_cls.primary_palette = "Blue"
 
         self.sm = MDScreenManager()
-        self.sm.add_widget(Settings(name='settings'))
+        self.sm.add_widget(MHmm(name='mhm'))
+        self.sm.add_widget(ORF(name='orf'))
         return self.sm
         # self.fps_monitor_start()
 

@@ -198,6 +198,23 @@ class Database():
         except Exception:
             raise Exception
 
+    def delete_playlist(playlist_id):
+        print("Entered")
+        print(playlist_id)
+        try:
+
+            cursor.execute(
+                f"DELETE FROM playlist_songs WHERE playlist_id = {playlist_id}")
+            cnx.commit()
+            print("Deleted playlist songs")
+
+            cursor.execute(f"DELETE FROM playlists WHERE id = {playlist_id}")
+            cnx.commit()
+            print("Deleted playlist")
+
+        except Exception:
+            raise Exception
+
 
 class WelcomeScreen(MDScreen):
     def __init__(self, **kwargs):
@@ -282,7 +299,7 @@ class MainScreen(MDScreen):
         super().__init__(**kwargs)
         self.bass = False
 
-        self.event = Clock.create_trigger(self.bass_on)
+        self.bass_event = Clock.create_trigger(self.bass_confirmation)
 
         with self.canvas.before:
             print(self.pos, self.size, Window.size)
@@ -500,7 +517,7 @@ class MainScreen(MDScreen):
         self.manager.get_screen("musicplayer").song_name = self.song_name
         self.manager.get_screen("musicplayer").played_songs.append(
             Database.get_song_detail(name=self.song_name))
-        self.manager.get_screen("musicplayer").clicked = True
+        # self.manager.get_screen("musicplayer").clicked = True
 
         if self.manager.get_screen("musicplayer").sound and self.manager.get_screen("musicplayer").sn != self.song_name:
             self.manager.get_screen("musicplayer").sound.stop()
@@ -651,14 +668,15 @@ class MainScreen(MDScreen):
 
             # self.sub_layout2_1_1.add_widget(MDLabel(text = "Song Name", halign = "left"))
             self.skip_prev = MDIconButton(
-                icon='skip-previous', halign="center")
+                icon='skip-previous', halign="center", disabled=True)
             self.skip_prev.bind(
                 on_press=self.previous)
             self.sub_layout2_1_1.add_widget(self.skip_prev)
             self.play_pause = MDIconButton(icon='play', halign="center", icon_color=[
-                                           0, 0, 0, 1], theme_icon_color="Custom", md_bg_color="white")
+                                           0, 0, 0, 1], theme_icon_color="Custom", md_bg_color="white", disabled=True)
             self.sub_layout2_1_1.add_widget(self.play_pause)
-            self.skip_next = MDIconButton(icon='skip-next', halign="center")
+            self.skip_next = MDIconButton(
+                icon='skip-next', halign="center", disabled=True)
             self.skip_next.bind(on_press=self.next)
             self.sub_layout2_1_1.add_widget(self.skip_next)
             # self.sub_layout2_1_1.add_widget(MDLabel(text = "Author Name", halign = "left"))
@@ -688,7 +706,9 @@ class MainScreen(MDScreen):
             self.switch = MDIconButton(icon='music-accidental-double-flat', on_press=lambda x: Thread(
                 target=self.booster, name='Song Booster').start())
             self.sub_layout_3_1.add_widget(self.switch)
-            # self.sub_layout_3_1.add_widget(MDIconButton(icon='play'))
+            self.repeat = MDIconButton(icon='repeat-off')
+            self.sub_layout_3_1.add_widget(self.repeat)
+            self.repeat.bind(on_release=self.song_repeat)
             # self.sub_layout_3_1.add_widget(MDIconButton(icon='skip-next'))
 
             # self.sub_layout.add_widget(MDLabel(text="Song Name\nAuthor Name", size_hint = (0.01,0.3), halign = 'left'))
@@ -713,18 +733,31 @@ class MainScreen(MDScreen):
         # Clock.schedule_once(self.bass == True, 1)
 
     def booster(self):
-        if self.sound:
+        if self.sound and self.switch.theme_icon_color != "Custom":
+            self.switch.icon_color = [0, 0.5, 1, 1]
+            self.switch.theme_icon_color = "Custom"
             BassBoost.audio(path=self.sound.source)
             self.sound.source = self.sound.source.replace(
                 '.mp3', '-boosted.mp3')
             self.sound.seek((self.slider.value/100)*self.sound.length)
             self.sound.play()
             self.bass = True
-            self.event()
+            self.bass_event()
+        elif self.sound:
+            self.sound.source = self.sound.source.replace(
+                '-boosted.mp3', '.mp3')
+            self.sound.seek((self.slider.value/100)*self.sound.length)
+            self.sound.play()
+            self.bass = False
+            self.switch.theme_icon_color = "Primary"
+            self.bass_event()
 
-    def bass_on(self, dt):
-        toast(text="Bass enabled for the current song!", duration=5)
-        self.bass = False
+    def bass_confirmation(self, dt):
+        if self.bass == True:
+            toast(text="Bass enabled for the current song!", duration=5)
+        else:
+            toast(text="Bass disabled", duration=5)
+        # self.bass = False
 
     def update_slider(self, dt):
         self.slider.value = (self.sound.get_pos() / self.sound.length) * 100
@@ -765,6 +798,19 @@ class MainScreen(MDScreen):
                 if self.paused:
                     self.sound.seek(current_pos)
                     self.paused = False
+
+    def song_repeat(self, dt):
+        if self.sound and self.repeat.icon == 'repeat-off':
+            self.repeat.icon = 'repeat'
+            self.repeat.icon_color = [0, 0.5, 1, 1]
+            self.repeat.theme_icon_color = "Custom"
+            self.sound.loop = True
+            toast(text="Loop enabled for the current song", duration=5)
+        elif self.sound:
+            self.repeat.icon = 'repeat-off'
+            self.repeat.theme_icon_color = "Primary"
+            self.sound.loop = False
+            toast(text="Loop disabled", duration=5)
 
     def check(self):
         print("Entered")
@@ -898,6 +944,9 @@ class MusicPlayer(MDScreen):
         self.upcoming = new[0]
         print(self.upcoming)
         if self.finished == True and self.counter == 0:
+            self.manager.get_screen("main").skip_next.disabled = False
+            self.manager.get_screen("main").play_pause.disabled = False
+            self.clicked = False
             print(1)
             self.previous_song.append(self.song)
             self.stop = True
@@ -1095,6 +1144,13 @@ class MusicPlayer(MDScreen):
         # message = self.song_author.text, timeout = 10, toast = False)
 
     def on_stop(self, dt):
+        if self.manager.get_screen("main").bass == True:
+            self.manager.get_screen(
+                "main").switch.theme_icon_color = "Primary"
+
+        if self.manager.get_screen("main").repeat.icon == 'repeat':
+            self.manager.get_screen("main").repeat.icon = 'repeat-off'
+            self.manager.get_screen("main").repeat.theme_icon_color = "Primary"
         print(self.paused, self.slider.value, self.prev, self.clicked)
         print("self.new:", self.new, "", self.index)
         if self.new == True and self.index != -1 and self.prev == False:
@@ -1139,6 +1195,8 @@ class MusicPlayer(MDScreen):
             self.clicked = False
             self.paused = False
             self.play_button.icon = 'play'
+            self.manager.get_screen('main').skip_prev.disabled = False
+            self.prev_button.disabled = False
             Clock.unschedule(self.update_slider)
             Clock.unschedule(self.update_time)
             self.new = False
@@ -1395,8 +1453,14 @@ class SearchScreen(MDScreen):
         self.manager.get_screen('musicplayer').playlist = False
         self.manager.get_screen('musicplayer').playlist_songs = None
         self.manager.get_screen('musicplayer').prev_screen = 'search'
+        self.manager.get_screen("musicplayer").played_songs.append(
+            Database.get_song_detail(name=self.song_name))
         self.manager.get_screen("musicplayer").clicked = True
         self.manager.get_screen('musicplayer').new = True
+
+        if self.manager.get_screen("musicplayer").sound and self.manager.get_screen("musicplayer").sn != self.song_name:
+            self.manager.get_screen("musicplayer").sound.stop()
+
         self.manager.current = 'musicplayer'
 
     def dropdown(self, instance):
@@ -1465,6 +1529,7 @@ class Playlist(MDScreen):
         super().__init__(*args, **kwargs)
         self.counter = 0
         self.prev_len = 0
+        self.deleted = False
 
     def go_to_main(self, dt):
         self.manager.current = 'main'
@@ -1520,30 +1585,35 @@ class Playlist(MDScreen):
     def create(self, dt):
         print(self.upload.state)
         if self.play_n.text != '' and self.upload.state == 'normal' and len(self.play_n.text) <= 30:
-            total = Database.playlists_info(username=self.username)
             today = date.today()
             t = today.strftime("%d/%m/%Y")
+            Database.create_playlist(
+                name=self.play_n.text, image=(
+                    self.upload.background_normal if self.upload.background_normal != 'images/upload.png' else 'images/no img.png'),
+                user=self.username, date=t
+            )
+            self.playlists = Database.playlists_info(username=self.username)
 
-            self.card_new = MDCard(id=str(len(total)+1), orientation='vertical', md_bg_color=(
+            self.card_new = MDCard(id=str(self.playlists[-1][0]), orientation='vertical', md_bg_color=(
                 1, 1, 1, 1), height="350dp", width="300dp", size_hint=(None, None), spacing="10dp", padding="20dp")
             self.sub_layout.add_widget(self.card_new)
             self.card_new.bind(on_press=self.playlist_songs)
 
-            self.img_new = Image(source=(self.upload.background_normal if self.upload.background_normal != 'images/upload.png' else 'images/no img.png'),
+            self.img_new = Image(source=self.playlists[-1][2],
                                  pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint_y=1, keep_ratio=False, allow_stretch=True)
             self.card_new.add_widget(self.img_new)
 
             self.play_name_new = MDLabel(
-                text=self.play_n.text, bold=True, font_style='H5', size_hint_y=0.2)
+                text=self.playlists[-1][1], bold=True, font_style='H5', size_hint_y=0.2)
             self.card_new.add_widget(self.play_name_new)
 
             self.play_date_new = MDLabel(
-                text=t, font_style="Subtitle2", size_hint_y=0.1)
+                text=self.playlists[-1][3], font_style="Subtitle2", size_hint_y=0.1)
             self.card_new.add_widget(self.play_date_new)
             print(self.play_name_new.text, self.img_new.source,
                   self.username, self.play_date_new.text)
-            Database.create_playlist(
-                name=self.play_name_new.text, image=self.play_img[0], user=self.username, date=self.play_date_new.text)
+            # Database.create_playlist(
+            #    name=self.play_name_new.text, image=self.play_img[0], user=self.username, date=self.play_date_new.text)
             self.dialog.dismiss()
             toast(text="Playlist Created")
 
@@ -1553,9 +1623,13 @@ class Playlist(MDScreen):
         self.playlists = Database.playlists_info(username=self.username)
         print(self.playlists)
         self.prev_len = len(self.playlists)
+        print(self.deleted)
 
-        if self.counter == 0:
+        if self.counter == 0 or self.deleted == True:
+            print("OKAKAKAKAKAAAAAA", self.deleted)
             self.counter += 1
+            if self.deleted:
+                self.clear_widgets()
             self.back = MDIconButton(
                 icon='chevron-left', pos_hint={'top': 1, 'left': 0.95})
             self.back.bind(on_press=self.go_to_main)
@@ -1595,6 +1669,7 @@ class Playlist(MDScreen):
                 icon='plus', pos_hint={'top': 0.1, 'right': 0.95}, elevation=5, icon_size="35dp")
             self.add_widget(self.create_play)
             self.create_play.bind(on_release=self.play_details)
+            self.deleted = False
 
         elif self.counter > 0 and self.prev_len < len(self.playlists):
 
@@ -1707,7 +1782,8 @@ class Playlist_Songs(MDScreen):
         self.sub_layout1.add_widget(self.song_author)
 
         self.icon1 = MDIconButton(icon='delete', pos_hint={
-                                  'top': 1}, icon_size="35dp", md_bg_color=[0, 1, 1, 0.5])
+                                  'top': 1}, icon_size="35dp", md_bg_color=[1, 0, 0, 0.5])
+        self.icon1.bind(on_press=self.confirm_deletion)
         self.layout_sub.add_widget(self.icon1)
         self.icon2 = MDIconButton(icon='play', pos_hint={
                                   'top': 1}, icon_size="35dp", md_bg_color=[0, 1, 1, 0.5])
@@ -1776,6 +1852,59 @@ class Playlist_Songs(MDScreen):
             l.append(self.rgb_to_hex(i))
 
         return l
+
+    def confirm_deletion(self, dt):
+        self.main = MDBoxLayout(orientation="vertical",
+                                spacing="5dp",
+                                size_hint_y=None,
+                                size_hint_x=None,
+                                width="300dp",
+                                height="50dp")
+        # self.upload = Button(background_normal='images/upload.png', on_press=self.choose,
+        #                     size_hint_x=0.7, background_down='images/loading.png')
+        # self.main.add_widget(self.upload)
+
+        # self.play_n = MDTextField(
+        #    hint_text="Playlist Name",
+        #    pos_hint={'center_y': 0.5},
+        #    max_text_length=30,
+        #    helper_text_mode='on_error'
+        # )
+        self.confirm = MDLabel(text="Are You Sure?",
+                               size_hint_x=2, bold=True, font_style="H5")
+        self.main.add_widget(self.confirm)
+
+        self.note = MDLabel(text="Note: This will delete the whole playlist")
+        self.main.add_widget(self.note)
+
+        # self.main.add_widget(self.play_n)
+        self.dialog = MDDialog(
+            # title="Are You Sure?",
+            type="custom",
+            auto_dismiss=False,
+            content_cls=self.main,
+            buttons=[
+                MDFlatButton(
+                    text="Yes",
+                    md_bg_color=[0, 1, 0, 0.5],
+                    on_release=self.delete_playlist
+                ),
+                MDFlatButton(
+                    text="Not Now",
+                    md_bg_color=[1, 0, 0, 0.5],
+                    on_release=lambda x: self.dialog.dismiss()
+                ),
+            ],
+        )
+
+        self.dialog.open()
+
+    def delete_playlist(self, dt):
+        Database.delete_playlist(self.playlist_id)
+        self.dialog.dismiss()
+        self.manager.get_screen('playlist').deleted = True
+        self.manager.current = 'playlist'
+        toast(text="Playlist Deleted")
 
     def go_back(self):
         print(self.manager.transition.direction)
