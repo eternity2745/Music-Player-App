@@ -220,10 +220,10 @@ class WelcomeScreen(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.video = Video(source="D:\\Music Player App\\login.mp4", options={
-                           'eos': 'loop', 'allow_stretch': True, 'keep_ratio': True})
-        self.video.state = 'play'
-        self.add_widget(self.video)
+        # self.video = Video(source="D:\\Music Player App\\login.mp4", options={
+        #                   'eos': 'loop', 'allow_stretch': True, 'keep_ratio': True})
+        # self.video.state = 'play'
+        # self.add_widget(self.video)
 
         self.welc = MDBoxLayout(orientation='vertical',
                                 size_hint=(0.37, 0.37),
@@ -244,7 +244,7 @@ class WelcomeScreen(MDScreen):
         self.add_widget(self.welc)
 
     def next(self):
-        self.video.state = 'stop'
+        # self.video.state = 'stop'
 
         self.manager.current = 'login'
 
@@ -642,7 +642,7 @@ class MainScreen(MDScreen):
             self.sub_layout1 = MDBoxLayout(size_hint_x=None, width=self.height)
             self.layout.add_widget(self.sub_layout1)
 
-            self.img = Image(source='images/test.png',
+            self.img = Image(source='images/black.jpg',
                              pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint=(0.75, 0.75))
             self.sub_layout1.add_widget(self.img)
 
@@ -700,7 +700,7 @@ class MainScreen(MDScreen):
             self.sub_layout2.add_widget(self.sub_layout_3)
 
             self.sub_layout_3_1 = MDBoxLayout(orientation='horizontal', size_hint=(
-                None, None), height=Window.minimum_height, width=Window.minimum_width)
+                0.4, None), height=Window.minimum_height, spacing="3dp")
             self.sub_layout_3.add_widget(self.sub_layout_3_1)
 
             self.switch = MDIconButton(icon='music-accidental-double-flat', on_press=lambda x: Thread(
@@ -709,12 +709,16 @@ class MainScreen(MDScreen):
             self.repeat = MDIconButton(icon='repeat-off')
             self.sub_layout_3_1.add_widget(self.repeat)
             self.repeat.bind(on_release=self.song_repeat)
-            # self.sub_layout_3_1.add_widget(MDIconButton(icon='skip-next'))
+            self.mute = MDIconButton(
+                icon='music-note', disabled=True, icon_color=[0, 0.5, 1, 1], theme_icon_color="Custom")
+            self.mute.bind(on_press=self.mute_func)
+            self.sub_layout_3_1.add_widget(self.mute)
 
             # self.sub_layout.add_widget(MDLabel(text="Song Name\nAuthor Name", size_hint = (0.01,0.3), halign = 'left'))
             # self.layout.add_widget(MDIconButton(icon="play", pos_hint = {'center_x': 0.5, 'center_y': 0.5, 'right':0.5}))
 
         elif self.counter > 0 and self.sound != None:
+            self.mute.disabled = False
             print("Entered Counter")
             self.counter += 1
             print(self.img.source, self.song_image)
@@ -811,6 +815,19 @@ class MainScreen(MDScreen):
             self.repeat.theme_icon_color = "Primary"
             self.sound.loop = False
             toast(text="Loop disabled", duration=5)
+
+    def mute_func(self, dt):
+        if self.sound and self.mute.icon == 'music-note':
+            self.mute.icon = 'music-note-off'
+            self.mute.theme_icon_color = "Primary"
+            self.sound.volume = 0
+            toast(text="Sound Muted", duration=5)
+        elif self.sound:
+            self.mute.icon = 'music-note'
+            self.mute.icon_color = [0, 0.5, 1, 1]
+            self.mute.theme_icon_color = "Custom"
+            self.sound.volume = 1
+            toast(text="Sound Enabled", duration=5)
 
     def check(self):
         print("Entered")
@@ -1151,6 +1168,7 @@ class MusicPlayer(MDScreen):
         if self.manager.get_screen("main").repeat.icon == 'repeat':
             self.manager.get_screen("main").repeat.icon = 'repeat-off'
             self.manager.get_screen("main").repeat.theme_icon_color = "Primary"
+
         print(self.paused, self.slider.value, self.prev, self.clicked)
         print("self.new:", self.new, "", self.index)
         if self.new == True and self.index != -1 and self.prev == False:
@@ -1304,6 +1322,9 @@ class MusicPlayer(MDScreen):
 
                 Clock.schedule_interval(self.update_slider, 1)
                 Clock.schedule_interval(self.update_time, 1)
+
+            if self.manager.get_screen("main").mute.icon == 'music-note-off':
+                self.sound.volume = 0
 
             self.manager.get_screen("main").sound = self.sound
             self.manager.get_screen("main").is_playing = self.paused
