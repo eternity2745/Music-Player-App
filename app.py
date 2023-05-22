@@ -179,21 +179,27 @@ class Database():
         except:
             raise Exception
 
-    def playlist_songs(id):
+    def playlist_songs(id, order_by=None):
         try:
-            cursor.execute(
-                "SELECT * FROM playlist_songs WHERE playlist_id = %s", (id, ))
-            result = cursor.fetchall()
-            return result
+            if order_by != None:
+                cursor.execute(
+                    f"SELECT * FROM playlist_songs WHERE playlist_id = {id} ORDER BY {order_by}")
+                result = cursor.fetchall()
+                return result
+            else:
+                cursor.execute(
+                    "SELECT * FROM playlist_songs WHERE playlist_id = %s", (id, ))
+                result = cursor.fetchall()
+                return result
         except Exception:
             raise Exception
 
-    def add_playlist_song(playlist_id, song_id):
-        today = date.today().strftime("%d/%m/%Y")
+    def add_playlist_song(playlist_id, song_id, song_name):
+        today = date.today().strftime("%Y/%m/%d")
 
         try:
             cursor.execute(
-                "INSERT INTO playlist_songs (playlist_id, song_id, created) VALUES (%s, %s, %s)", (playlist_id, song_id, today))
+                "INSERT INTO playlist_songs (playlist_id, song_id, song_name, created) VALUES (%s, %s, %s, %s)", (playlist_id, song_id, song_name, today))
             cnx.commit()
         except Exception:
             raise Exception
@@ -212,6 +218,27 @@ class Database():
             cnx.commit()
             print("Deleted playlist")
 
+        except Exception:
+            raise Exception
+
+    def delete_playlist_song(playlist_id, song_id):
+        try:
+            cursor.execute(
+                f'DELETE FROM playlist_songs WHERE playlist_id = {playlist_id} AND song_id = {song_id}')
+            cnx.commit()
+        except Exception:
+            raise Exception
+
+    def playlist_edit(playlist_id, rename=None, image=None):
+        try:
+            if rename:
+                cursor.execute(
+                    "UPDATE playlists SET name = %s WHERE id = %s", (rename, playlist_id, ))
+                cnx.commit()
+            elif image:
+                cursor.execute(
+                    "UPDATE playlists SET image = %s WHERE id = %s", (image, playlist_id, ))
+                cnx.commit()
         except Exception:
             raise Exception
 
@@ -973,7 +1000,8 @@ class MusicPlayer(MDScreen):
             self.sound = SoundLoader.load(self.song[4])
             self.sound.play()
             self.is_playing = True
-            self.bg_image = FitImage(source=self.song[3], opacity='0.3')
+            self.bg_image = FitImage(
+                source='images/Hridayam-bg.png', opacity='0.3')
             self.add_widget(self.bg_image)
 
             self.back = MDIconButton(
@@ -1378,8 +1406,8 @@ class MusicPlayer(MDScreen):
 class BassBoost():
     global attenuate_db
     global accentuate_db
-    attenuate_db = -5
-    accentuate_db = 5
+    attenuate_db = -10
+    accentuate_db = 10
 
     def bass_line_freq(track):
         sample_track = list(track)
@@ -1432,8 +1460,8 @@ class SearchScreen(MDScreen):
         self.scroll.add_widget(self.list)
 
         for i in self.songs:
-            self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(id=str(
-                i[0]), icon='dots-vertical', on_press=self.dropdown), ImageLeftWidget(source=i[3]), text=i[1], secondary_text=i[2])
+            self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(
+                id=f"{i[0]},{i[1]}", icon='dots-vertical', on_press=self.dropdown), ImageLeftWidget(source=i[3]), text=i[1], secondary_text=i[2])
             self.list.add_widget(self.sugg_songs)
             self.sugg_songs.bind(on_release=self.musicplayer)
 
@@ -1449,8 +1477,8 @@ class SearchScreen(MDScreen):
 
         if len(filtered_items) > 0:
             for it in filtered_items:
-                self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(id=str(
-                    it[0]), icon='dots-vertical', on_press=self.dropdown), ImageLeftWidget(source=it[3]), text=it[1], secondary_text=it[2])
+                self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(
+                    id=f"{it[0]},{it[1]}", icon='dots-vertical', on_press=self.dropdown), ImageLeftWidget(source=it[3]), text=it[1], secondary_text=it[2])
                 self.list.add_widget(self.sugg_songs)
                 self.sugg_songs.bind(on_release=self.musicplayer)
 
@@ -1485,7 +1513,10 @@ class SearchScreen(MDScreen):
         self.manager.current = 'musicplayer'
 
     def dropdown(self, instance):
-        self.song_id = int(instance.id)
+        detail = instance.id.split(',')
+        print(detail, detail[1])
+        self.name_of_song = detail[1]
+        self.song_id = int(detail[0])
         self.menu_items = [
             {
                 'text': 'Add to Queue',
@@ -1535,7 +1566,7 @@ class SearchScreen(MDScreen):
 
     def select_playlist(self, instance):
         Database.add_playlist_song(playlist_id=int(
-            instance.id), song_id=int(self.song_id))
+            instance.id), song_id=int(self.song_id), song_name=self.name_of_song)
         self.dialog.dismiss()
         toast(text="Song Added To Playlist")
 
@@ -1712,14 +1743,53 @@ class Playlist(MDScreen):
                 self.card_new.add_widget(self.play_date_new)
             self.prev_len = len(self.playlists)
 
+        elif self.counter > 0:
+            self.clear_widgets()
+            self.back = MDIconButton(
+                icon='chevron-left', pos_hint={'top': 1, 'left': 0.95})
+            self.back.bind(on_press=self.go_to_main)
+            self.add_widget(self.back)
+
+            self.head = MDLabel(text="Playlists", pos_hint={
+                                'top': 0.95, 'right': 0.53}, bold=True, font_style="H3", size_hint=(0.5, 0.1))
+            self.add_widget(self.head)
+
+            self.scroll = MDScrollView(size_hint=(0.9, 0.87), pos_hint={'top': 0.87, 'right': 0.95}, scroll_wheel_distance=5, scroll_type=['bars', 'content'], smooth_scroll_end=75,
+                                       always_overscroll=False, bar_margin=0.5, bar_width=7, bar_inactive_color=[0, 0, 0, 0])
+            self.add_widget(self.scroll)
+
+            self.sub_layout = MDStackLayout(
+                spacing="30dp", adaptive_height=True, width=dp(1000), padding="20dp")
+            self.scroll.add_widget(self.sub_layout)
+
+            for i in range(len(self.playlists)):
+                self.card = MDCard(id=str(self.playlists[i][0]), orientation='vertical', md_bg_color=(
+                    1, 1, 1, 1), height="350dp", width="300dp", size_hint=(None, None), spacing="10dp", padding="20dp")
+                self.sub_layout.add_widget(self.card)
+                self.card.bind(on_press=self.playlist_songs)
+
+                self.img = Image(source=self.playlists[i][2], pos_hint={
+                                 'center_x': 0.5, 'center_y': 0.5}, size_hint_y=1, keep_ratio=False, allow_stretch=True)
+                self.card.add_widget(self.img)
+
+                self.play_name = MDLabel(
+                    text=self.playlists[i][1], bold=True, font_style='H5', size_hint_y=0.2)
+                self.card.add_widget(self.play_name)
+
+                self.play_date = MDLabel(
+                    text=self.playlists[i][4], font_style="Subtitle2", size_hint_y=0.1)
+                self.card.add_widget(self.play_date)
+
     def playlist_songs(self, instance):
         try:
             self.manager.get_screen(
                 "playlist_songs").playlist_id = int(instance.id)
+            print(1)
             self.manager.get_screen(
                 "playlist_songs").bg_img = instance.children[2].source
             self.manager.get_screen(
                 "playlist_songs").play_name = instance.children[1].text
+            print(2)
             self.manager.get_screen(
                 "playlist_songs").play_date = instance.children[0].text
             self.manager.current = 'playlist_songs'
@@ -1745,7 +1815,8 @@ class Playlist_Songs(MDScreen):
         self.play_date = None
 
     def on_pre_enter(self):
-        self.songs = Database.playlist_songs(id=self.playlist_id)
+        self.songs = Database.playlist_songs(
+            id=self.playlist_id, order_by="created")
         print(self.songs)
 
         self.song_infos = []
@@ -1760,8 +1831,8 @@ class Playlist_Songs(MDScreen):
         with self.canvas:
             Color(0.5, 0.5, 0.5,
                   mode='hex')
-            Rectangle(texture=Gradient.vertical(get_color_from_hex(self.hex[1]), get_color_from_hex(self.hex[0])),
-                      pos=[0, -8], size=[2000, 1000])
+            self.bg_grad = Rectangle(texture=Gradient.vertical(get_color_from_hex(self.hex[1]), get_color_from_hex(self.hex[0])),
+                                     pos=[0, -8], size=[2000, 1000])
 
         self.bar = MDTopAppBar(title=self.play_name, shadow_color=(0, 0, 0, 0), left_action_items=[
                                ["arrow-left", lambda x: self.go_back(), 'back']], pos_hint={'top': 1})
@@ -1804,17 +1875,25 @@ class Playlist_Songs(MDScreen):
 
         self.icon1 = MDIconButton(icon='delete', pos_hint={
                                   'top': 1}, icon_size="35dp", md_bg_color=[1, 0, 0, 0.5])
-        self.icon1.bind(on_press=self.confirm_deletion)
+        self.icon1.bind(on_press=self.confirm_playlist_deletion)
         self.layout_sub.add_widget(self.icon1)
-        self.icon2 = MDIconButton(icon='play', pos_hint={
+        self.icon2 = MDIconButton(icon='sort-alphabetical-ascending', pos_hint={
                                   'top': 1}, icon_size="35dp", md_bg_color=[0, 1, 1, 0.5])
+        self.icon2.bind(on_press=self.sort_on_name)
         self.layout_sub.add_widget(self.icon2)
-        self.icon3 = MDIconButton(icon='play', pos_hint={
+        self.icon3 = MDIconButton(icon='sort-calendar-ascending', pos_hint={
                                   'top': 1}, icon_size="35dp", md_bg_color=[0, 1, 1, 0.5])
+        self.icon3.bind(on_press=self.sort_on_date)
         self.layout_sub.add_widget(self.icon3)
-        self.icon4 = MDIconButton(icon='play', pos_hint={
+        self.icon4 = MDIconButton(icon='playlist-edit', pos_hint={
                                   'top': 1}, icon_size="35dp", md_bg_color=[0, 1, 1, 0.5])
+        self.icon4.bind(on_press=self.confirm_playlist_rename)
         self.layout_sub.add_widget(self.icon4)
+
+        self.icon5 = MDIconButton(icon='image-edit', pos_hint={
+                                  'top': 1}, icon_size="35dp", md_bg_color=[0, 1, 1, 0.5])
+        self.icon5.bind(on_press=self.confirm_playlist_image)
+        self.layout_sub.add_widget(self.icon5)
 
         self.layout2 = MDBoxLayout(orientation='vertical', spacing="20dp",
                                    padding="20dp", size_hint_y=None, adaptive_height=True)
@@ -1836,10 +1915,12 @@ class Playlist_Songs(MDScreen):
             self.card.add_widget(
                 MDLabel(text=self.song_infos[i][2], font_style="H5"))
             self.card.add_widget(MDLabel(text='', size_hint_x=0.4))
-            self.card.add_widget(MDLabel(text=self.songs[i][2], pos_hint={
+            self.card.add_widget(MDLabel(text=datetime.datetime.strptime(f"{self.songs[i][3]}", rf"%Y-%m-%d").strftime(rf"%d/%m/%Y"), pos_hint={
                                  'center_x': 0.5}, font_style="H5", size_hint_x=0.7))
-            self.card.add_widget(MDIconButton(
-                icon='dots-vertical', pos_hint={'center_y': 0.5}, size_hint_x=0.2))
+            self.delete_song = MDIconButton(id=f"{self.song_infos[i][0]}",
+                                            icon='delete', pos_hint={'center_y': 0.5}, size_hint_x=0.2)
+            self.delete_song.bind(on_press=self.confirm_playlist_song_deletion)
+            self.card.add_widget(self.delete_song)
 
     def musicplayer(self, instance):
         self.index = int(instance.children[6].text)
@@ -1874,7 +1955,7 @@ class Playlist_Songs(MDScreen):
 
         return l
 
-    def confirm_deletion(self, dt):
+    def confirm_playlist_deletion(self, dt):
         self.main = MDBoxLayout(orientation="vertical",
                                 spacing="5dp",
                                 size_hint_y=None,
@@ -1920,12 +2001,280 @@ class Playlist_Songs(MDScreen):
 
         self.dialog.open()
 
+    def confirm_playlist_song_deletion(self, instance):
+        self.main = MDBoxLayout(orientation="vertical",
+                                spacing="5dp",
+                                size_hint_y=None,
+                                size_hint_x=None,
+                                width="300dp",
+                                height="50dp")
+        # self.upload = Button(background_normal='images/upload.png', on_press=self.choose,
+        #                     size_hint_x=0.7, background_down='images/loading.png')
+        # self.main.add_widget(self.upload)
+
+        # self.play_n = MDTextField(
+        #    hint_text="Playlist Name",
+        #    pos_hint={'center_y': 0.5},
+        #    max_text_length=30,
+        #    helper_text_mode='on_error'
+        # )
+        self.confirm = MDLabel(text="Are You Sure?",
+                               size_hint_x=2, bold=True, font_style="H5")
+        self.main.add_widget(self.confirm)
+
+        # self.note = MDLabel(text="Note: This will delete the whole playlist")
+        # self.main.add_widget(self.note)
+
+        # self.main.add_widget(self.play_n)
+        self.dialog = MDDialog(
+            # title="Are You Sure?",
+            type="custom",
+            auto_dismiss=False,
+            content_cls=self.main,
+            buttons=[
+                MDFlatButton(
+                    id=instance.id,
+                    text="Yes",
+                    md_bg_color=[0, 1, 0, 0.5],
+                    on_release=self.song_delete
+                ),
+                MDFlatButton(
+                    text="Not Now",
+                    md_bg_color=[1, 0, 0, 0.5],
+                    on_release=lambda x: self.dialog.dismiss()
+                ),
+            ],
+        )
+
+        self.dialog.open()
+
     def delete_playlist(self, dt):
         Database.delete_playlist(self.playlist_id)
         self.dialog.dismiss()
         self.manager.get_screen('playlist').deleted = True
         self.manager.current = 'playlist'
         toast(text="Playlist Deleted")
+
+    def song_delete(self, instance):
+        Database.delete_playlist_song(self.playlist_id, int(instance.id))
+        self.layout2.clear_widgets()
+        self.songs = Database.playlist_songs(id=self.playlist_id)
+        print(self.songs)
+
+        self.song_infos = []
+        for i in self.songs:
+            self.song_info = Database.get_song_detail(id=i[1])
+            print(self.song_info)
+            self.song_infos.append(self.song_info)
+        print(self.song_infos)
+
+        self.number = MDLabel(text='')
+
+        for i in range(len(self.song_infos)):
+            self.card = MDCard(size_hint_y=None, orientation='horizontal', padding=[
+                               50, 10, 50, 10], height="150dp", radius=20, size_hint_x=0.85, pos_hint={'center_x': 0.5})
+            self.card.bind(on_release=self.musicplayer)
+            self.layout2.add_widget(self.card)
+            self.number.text = f"{i}"
+            self.card.add_widget(
+                MDLabel(text=f"{i+1}", size_hint_x=0.1, font_style="H5"))
+            self.card.add_widget(Image(source=self.song_infos[i][3]))
+            self.card.add_widget(
+                MDLabel(text=self.song_infos[i][1], font_style='H5'))
+            self.card.add_widget(
+                MDLabel(text=self.song_infos[i][2], font_style="H5"))
+            self.card.add_widget(MDLabel(text='', size_hint_x=0.4))
+            self.card.add_widget(MDLabel(text=datetime.datetime.strptime(f"{self.songs[i][3]}", rf"%Y-%m-%d").strftime(rf"%d/%m/%Y"), pos_hint={
+                                 'center_x': 0.5}, font_style="H5", size_hint_x=0.7))
+            self.delete_song = MDIconButton(id=f"{self.song_infos[i][0]}",
+                                            icon='delete', pos_hint={'center_y': 0.5}, size_hint_x=0.2)
+            self.delete_song.bind(on_press=self.song_delete)
+            self.card.add_widget(self.delete_song)
+
+        self.dialog.dismiss()
+
+    def sort_on_name(self, dt):
+        self.layout2.clear_widgets()
+        if self.icon2.icon == 'sort-alphabetical-ascending':
+            sort = 'song_name DESC'
+            self.icon2.icon = 'sort-alphabetical-descending'
+        else:
+            sort = 'song_name ASC'
+            self.icon2.icon = 'sort-alphabetical-ascending'
+        self.songs = Database.playlist_songs(
+            id=self.playlist_id, order_by=sort)
+        print(self.songs)
+
+        self.song_infos = []
+        for i in self.songs:
+            self.song_info = Database.get_song_detail(id=i[1])
+            print(self.song_info)
+            self.song_infos.append(self.song_info)
+        print(self.song_infos)
+
+        self.number = MDLabel(text='')
+
+        for i in range(len(self.song_infos)):
+            self.card = MDCard(size_hint_y=None, orientation='horizontal', padding=[
+                               50, 10, 50, 10], height="150dp", radius=20, size_hint_x=0.85, pos_hint={'center_x': 0.5})
+            self.card.bind(on_release=self.musicplayer)
+            self.layout2.add_widget(self.card)
+            self.number.text = f"{i}"
+            self.card.add_widget(
+                MDLabel(text=f"{i+1}", size_hint_x=0.1, font_style="H5"))
+            self.card.add_widget(Image(source=self.song_infos[i][3]))
+            self.card.add_widget(
+                MDLabel(text=self.song_infos[i][1], font_style='H5'))
+            self.card.add_widget(
+                MDLabel(text=self.song_infos[i][2], font_style="H5"))
+            self.card.add_widget(MDLabel(text='', size_hint_x=0.4))
+            self.card.add_widget(MDLabel(text=datetime.datetime.strptime(f"{self.songs[i][3]}", rf"%Y-%m-%d").strftime(rf"%d/%m/%Y"), pos_hint={
+                                 'center_x': 0.5}, font_style="H5", size_hint_x=0.7))
+            self.delete_song = MDIconButton(id=f"{self.song_infos[i][0]}",
+                                            icon='delete', pos_hint={'center_y': 0.5}, size_hint_x=0.2)
+            self.delete_song.bind(on_press=self.song_delete)
+            self.card.add_widget(self.delete_song)
+
+    def sort_on_date(self, dt):
+        self.layout2.clear_widgets()
+        if self.icon3.icon == 'sort-calendar-ascending':
+            sort = 'created DESC'
+            self.icon3.icon = 'sort-calendar-descending'
+        else:
+            sort = 'created ASC'
+            self.icon3.icon = 'sort-calendar-ascending'
+        self.songs = Database.playlist_songs(
+            id=self.playlist_id, order_by=sort)
+        print(self.songs)
+
+        self.song_infos = []
+        for i in self.songs:
+            self.song_info = Database.get_song_detail(id=i[1])
+            print(self.song_info)
+            self.song_infos.append(self.song_info)
+        print(self.song_infos)
+
+        self.number = MDLabel(text='')
+
+        for i in range(len(self.song_infos)):
+            self.card = MDCard(size_hint_y=None, orientation='horizontal', padding=[
+                               50, 10, 50, 10], height="150dp", radius=20, size_hint_x=0.85, pos_hint={'center_x': 0.5})
+            self.card.bind(on_release=self.musicplayer)
+            self.layout2.add_widget(self.card)
+            self.number.text = f"{i}"
+            self.card.add_widget(
+                MDLabel(text=f"{i+1}", size_hint_x=0.1, font_style="H5"))
+            self.card.add_widget(Image(source=self.song_infos[i][3]))
+            self.card.add_widget(
+                MDLabel(text=self.song_infos[i][1], font_style='H5'))
+            self.card.add_widget(
+                MDLabel(text=self.song_infos[i][2], font_style="H5"))
+            self.card.add_widget(MDLabel(text='', size_hint_x=0.4))
+            self.card.add_widget(MDLabel(text=datetime.datetime.strptime(f"{self.songs[i][3]}", rf"%Y-%m-%d").strftime(rf"%d/%m/%Y"), pos_hint={
+                                 'center_x': 0.5}, font_style="H5", size_hint_x=0.7))
+            self.delete_song = MDIconButton(id=f"{self.song_infos[i][0]}",
+                                            icon='delete', pos_hint={'center_y': 0.5}, size_hint_x=0.2)
+            self.delete_song.bind(on_press=self.song_delete)
+            self.card.add_widget(self.delete_song)
+
+    def confirm_playlist_rename(self, dt):
+
+        # self.rename_layout = MDBoxLayout(orientation="horizontal",
+        #                                 spacing="12dp",
+        #                                 size_hint_y=None,
+        #                                 height="200dp")
+
+        self.rename_layout = MDTextField(
+            hint_text="New Playlist Name",
+            pos_hint={'center_y': 0.5, },
+            max_text_length=30,
+            helper_text_mode='on_error'
+        )
+
+        # self.main.add_widget(self.play_n)
+        self.dialog = MDDialog(
+            title="Rename Playlist",
+            type="custom",
+            auto_dismiss=False,
+            content_cls=self.rename_layout,
+            buttons=[
+                MDFlatButton(
+                    text="CONFRIM",
+                    on_release=self.rename_playlist
+                ),
+                MDFlatButton(
+                    text="CANCEL",
+                    on_release=lambda x: self.dialog.dismiss()
+                ),
+            ],
+        )
+
+        self.dialog.open()
+
+    def rename_playlist(self, dt):
+        if self.rename_layout.text != '' and len(self.rename_layout.text) <= 30:
+            Database.playlist_edit(
+                playlist_id=self.playlist_id, rename=self.rename_layout.text)
+            self.song_name.text = self.rename_layout.text
+            self.bar.title = self.rename_layout.text
+            self.play_name = self.rename_layout.text
+            self.dialog.dismiss()
+
+    def confirm_playlist_image(self, dt):
+
+        self.upload_layout = MDBoxLayout(
+            orientation='vertical', size_hint_y=None, height="200dp", width="25dp")
+
+        self.upload = Button(background_normal='images/upload.png',
+                             on_press=self.choose, background_down='images/loading.png')
+        self.upload_layout.add_widget(self.upload)
+
+        self.dialog = MDDialog(
+            title="Create Playlist",
+            type="custom",
+            auto_dismiss=False,
+            content_cls=self.upload_layout,
+            buttons=[
+                MDFlatButton(
+                    text="CONFIRM",
+                    on_release=self.image_edit_playlist
+                ),
+                MDFlatButton(
+                    text="CANCEL",
+                    on_release=lambda x: self.dialog.dismiss()
+                ),
+            ],
+        )
+
+        self.dialog.open()
+
+    def choose(self, dt):
+        self.play_img = filechooser.open_file()
+        # print(self.play_img, self.play_img[0])
+        try:
+            self.upload.background_normal = self.play_img[0]
+            print(self.play_img[0], self.upload.background_normal)
+        except:
+            toast(text="Unable to load image")
+
+    def image_edit_playlist(self, dt):
+        if self.upload.background_normal != 'images/upload.png':
+
+            Database.playlist_edit(
+                playlist_id=self.playlist_id, image=self.upload.background_normal)
+            self.bg.source = self.upload.background_normal
+            self.bg_img = self.upload.background_normal
+            self.hex = self.colour_extractor(self.bg_img)
+            if self.bg.texture.size != (248, 248):
+                image = Im.open(self.bg_img)
+                new = image.resize((248, 248))
+                new.save('-new.'.join(self.bg_img.rsplit('.', 1)))
+                self.bg.source = '-new.'.join(self.bg_img.rsplit('.', 1))
+
+            self.bg_grad.texture = Gradient.vertical(
+                get_color_from_hex(self.hex[1]), get_color_from_hex(self.hex[0]))
+
+            self.dialog.dismiss()
 
     def go_back(self):
         print(self.manager.transition.direction)
