@@ -813,6 +813,7 @@ class MainScreen(MDScreen):
         global current_pos
         if self.sound.state == 'play':
             self.paused = True
+            self.manager.get_screen('musicplayer').paused = True
             self.finished = False
             self.sound.stop()
             self.play_pause.icon = 'play'
@@ -828,7 +829,7 @@ class MainScreen(MDScreen):
                 self.finished = False
                 if self.paused:
                     self.sound.seek(current_pos)
-                    self.paused = False
+                    self.manager.get_screen('musicplayer').paused = False
 
     def song_repeat(self, dt):
         if self.sound and self.repeat.icon == 'repeat-off':
@@ -1001,7 +1002,7 @@ class MusicPlayer(MDScreen):
             self.sound.play()
             self.is_playing = True
             self.bg_image = FitImage(
-                source='images/Hridayam-bg.png', opacity='0.3')
+                source=self.song[3]+'-bg.png', opacity='0.5')
             self.add_widget(self.bg_image)
 
             self.back = MDIconButton(
@@ -1067,7 +1068,7 @@ class MusicPlayer(MDScreen):
             self.sn = self.song[1]
             self.new = True
             self.sound.stop()
-            self.bg_image.source = self.song[3]
+            self.bg_image.source = self.song[3]+'-bg.png'
             self.song_title.text = self.song[1]
             self.song_author.text = self.song[2]
             self.song_image.source = self.song[3]
@@ -1199,7 +1200,7 @@ class MusicPlayer(MDScreen):
 
         print(self.paused, self.slider.value, self.prev, self.clicked)
         print("self.new:", self.new, "", self.index)
-        if self.new == True and self.index != -1 and self.prev == False:
+        if self.new == True and self.index != -1 and self.prev == False and self.paused == False:
             Clock.unschedule(self.update_slider)
             Clock.unschedule(self.update_time)
             print(self.played_songs)
