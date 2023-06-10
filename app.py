@@ -366,11 +366,13 @@ class MainScreen(MDScreen):
         self.nav_playlist = MDNavigationDrawerItem(
             text='Playlist', icon="playlist-music", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
         self.nav_menu.add_widget(self.nav_playlist)
-        self.nav_playlist.bind(on_release=self.to_playlist)
+        self.nav_playlist.bind(on_release=self.to_playlist,
+                               on_enter=self.enter, on_leave=self.leave)
 
         self.nav_text_art = MDNavigationDrawerItem(
             text='AI Text Art', icon="image-text", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
-        self.nav_text_art.bind(on_release=self.to_textart)
+        self.nav_text_art.bind(on_release=self.to_textart,
+                               on_enter=self.enter, on_leave=self.leave)
         self.nav_menu.add_widget(self.nav_text_art)
 
         self.nav_text_art = MDNavigationDrawerItem(
@@ -390,7 +392,8 @@ class MainScreen(MDScreen):
 
         self.nav_logout = MDNavigationDrawerItem(
             text='Logout', icon="logout", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
-        self.nav_logout.bind(on_release=self.logout)
+        self.nav_logout.bind(on_release=self.logout,
+                             on_enter=self.enter, on_leave=self.leave)
         self.nav_menu.add_widget(self.nav_logout)
 
         self.nav_layout = MDNavigationLayout()
@@ -467,7 +470,8 @@ class MainScreen(MDScreen):
                 MDLabel(text=i[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
             self.card1.add_widget(
                 MDLabel(text=i[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card1.bind(on_release=self.song)
+            self.card1.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
             self.recommended_section.add_widget(self.card1)
 
         for x in s2:
@@ -480,7 +484,8 @@ class MainScreen(MDScreen):
                 MDLabel(text=x[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
             self.card2.add_widget(
                 MDLabel(text=x[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card2.bind(on_release=self.song)
+            self.card2.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
             self.malayalam_section.add_widget(self.card2)
 
         for y in s3:
@@ -493,7 +498,8 @@ class MainScreen(MDScreen):
                 MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
             self.card3.add_widget(
                 MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card3.bind(on_release=self.song)
+            self.card3.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
             self.english_section.add_widget(self.card3)
 
             # songs = Database.music(limit=1)
@@ -504,7 +510,8 @@ class MainScreen(MDScreen):
                 MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
             self.card4.add_widget(
                 MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card4.bind(on_release=self.song)
+            self.card4.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
             self.hindi_section.add_widget(self.card4)
 
             # songs = Database.music(limit=1)
@@ -515,10 +522,17 @@ class MainScreen(MDScreen):
                 MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
             self.card5.add_widget(
                 MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card5.bind(on_release=self.song)
+            self.card5.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
             self.tamil_section.add_widget(self.card5)
 
         self.add_widget(self.nav_layout)
+
+    def enter(self, dt):
+        Window.set_system_cursor(cursor_name='hand')
+
+    def leave(self, dt):
+        Window.set_system_cursor(cursor_name='arrow')
 
     def resize(self, window, width, height):
         self.rect.size = Window.size
@@ -697,14 +711,15 @@ class MainScreen(MDScreen):
             self.skip_prev = MDIconButton(
                 icon='skip-previous', halign="center", disabled=True)
             self.skip_prev.bind(
-                on_press=self.previous)
+                on_press=self.previous, on_breh=self.enter, on_leave=self.leave)
             self.sub_layout2_1_1.add_widget(self.skip_prev)
             self.play_pause = MDIconButton(icon='play', halign="center", icon_color=[
                                            0, 0, 0, 1], theme_icon_color="Custom", md_bg_color="white", disabled=True)
             self.sub_layout2_1_1.add_widget(self.play_pause)
             self.skip_next = MDIconButton(
                 icon='skip-next', halign="center", disabled=True)
-            self.skip_next.bind(on_press=self.next)
+            self.skip_next.bind(on_press=self.next,
+                                on_button_enter=self.enter, on_button_leave=self.leave)
             self.sub_layout2_1_1.add_widget(self.skip_next)
             # self.sub_layout2_1_1.add_widget(MDLabel(text = "Author Name", halign = "left"))
 
@@ -716,7 +731,8 @@ class MainScreen(MDScreen):
                                  font_style="Subtitle2", halign="right")
             self.sub_layout5_2.add_widget(self.start)
             self.slider = MDSlider(
-                size_hint_x=0.7, cursor_image='images/test.png', hint=False)
+                size_hint_x=0.7, hint=False)
+            self.slider.set_thumb_icon(path='images/test.png')
             self.sub_layout5_2.add_widget(self.slider)
             self.end = MDLabel(text="00:00", size_hint_x=0.1,
                                font_style="Subtitle2")
@@ -735,10 +751,12 @@ class MainScreen(MDScreen):
             self.sub_layout_3_1.add_widget(self.switch)
             self.repeat = MDIconButton(icon='repeat-off')
             self.sub_layout_3_1.add_widget(self.repeat)
-            self.repeat.bind(on_release=self.song_repeat)
+            self.repeat.bind(on_release=self.song_repeat,
+                             on_enter=self.enter, on_leave=self.leave)
             self.mute = MDIconButton(
                 icon='music-note', disabled=True, icon_color=[0, 0.5, 1, 1], theme_icon_color="Custom")
-            self.mute.bind(on_press=self.mute_func)
+            self.mute.bind(on_press=self.mute_func,
+                           on_enter=self.enter, on_leave=self.leave)
             self.sub_layout_3_1.add_widget(self.mute)
 
             # self.sub_layout.add_widget(MDLabel(text="Song Name\nAuthor Name", size_hint = (0.01,0.3), halign = 'left'))
@@ -754,11 +772,13 @@ class MainScreen(MDScreen):
             self.song_n.text = self.song_name
             self.song_auth.text = self.song_author
             self.end.text = self.convert_seconds_to_min(self.sound.length)
-            self.slider.bind(on_touch_up=self.touch_up)
+            self.slider.bind(on_touch_up=self.touch_up,
+                             on_enter=self.enter, on_leave=self.leave)
             print(self.sound.state)
             self.play_pause.icon = (
                 'play' if self.sound.state == 'stop' else 'pause')
-            self.play_pause.bind(on_press=self.playpause)
+            self.play_pause.bind(on_press=self.playpause,
+                                 on_enter=self.enter, on_leave=self.leave)
             Clock.schedule_interval(self.update_slider, 1)
             Clock.schedule_interval(self.update_time, 1)
         # Clock.schedule_once(self.bass == True, 1)
@@ -919,8 +939,8 @@ class AITextArtScreen(MDScreen):
         super().__init__(**kwargs)
         self.running = False
         self.layout = MDBoxLayout(orientation='vertical')
-        self.text_input = MDTextField(
-            multiline=False, size_hint_y=None, height=50, hint_text='Enter text here')
+        self.text_input = MDTextField(mode='round',
+                                      multiline=False, size_hint_y=None, height=50, hint_text='Enter text here')
         self.submit_button = MDRectangleFlatButton(
             text='Submit', size_hint_y=None, height=50)
         if self.running == False:
@@ -1158,7 +1178,7 @@ class MusicPlayer(MDScreen):
         print(self.sn)
         self.sn = song[1]
 
-        self.bg_image.source = song[3]
+        self.bg_image.source = song[3]+'-bg.png'
         self.song_title.text = song[1]
         self.song_author.text = song[2]
         self.song_image.source = song[3]
@@ -1210,7 +1230,7 @@ class MusicPlayer(MDScreen):
             song = self.played_songs[self.index]
             self.sn = song[1]
 
-            self.bg_image.source = song[3]
+            self.bg_image.source = song[3]+'-bg.png'
             self.song_title.text = song[1]
             self.song_author.text = song[2]
             self.song_image.source = song[3]
@@ -1257,7 +1277,7 @@ class MusicPlayer(MDScreen):
                     #    self.previous_song = self.queue_songs[0]
                     self.sn = self.queue_songs[0][1]
 
-                    self.bg_image.source = self.queue_songs[0][3]
+                    self.bg_image.source = self.queue_songs[0][3]+'-bg.png'
                     self.song_title.text = self.queue_songs[0][1]
                     self.song_author.text = self.queue_songs[0][2]
                     self.song_image.source = self.queue_songs[0][3]
@@ -1284,7 +1304,7 @@ class MusicPlayer(MDScreen):
                     self.played_songs.append(self.playlist_songs[0])
                     self.sn = self.playlist_songs[0][1]
 
-                    self.bg_image.source = self.playlist_songs[0][3]
+                    self.bg_image.source = self.playlist_songs[0][3]+'-bg.png'
                     self.song_title.text = self.playlist_songs[0][1]
                     self.song_author.text = self.playlist_songs[0][2]
                     self.song_image.source = self.playlist_songs[0][3]
@@ -1311,7 +1331,7 @@ class MusicPlayer(MDScreen):
                         Database.get_song_detail(name=song[0][1]))
                     self.sn = song[0][1]
 
-                    self.bg_image.source = song[0][3]
+                    self.bg_image.source = song[0][3]+'-bg.png'
                     self.song_title.text = song[0][1]
                     self.song_author.text = song[0][2]
                     self.song_image.source = song[0][3]
@@ -1335,7 +1355,7 @@ class MusicPlayer(MDScreen):
                     Database.get_song_detail(name=song[0][1]))
                 self.sn = song[0][1]
 
-                self.bg_image.source = song[0][3]
+                self.bg_image.source = song[0][3]+'-bg.png'
                 self.song_title.text = song[0][1]
                 self.song_author.text = song[0][2]
                 self.song_image.source = song[0][3]
