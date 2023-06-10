@@ -52,8 +52,6 @@ joblib==1.2.0
 kaki==0.1.8
 keras==2.11.0
 Kivy==2.2.0
-kivy-deps.glew==0.3.1
-kivy-deps.sdl2==0.4.5
 Kivy-examples==2.1.0
 Kivy-Garden==0.1.5
 KivyGradient==0.0.4
