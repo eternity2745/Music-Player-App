@@ -1,3 +1,69 @@
+from kivy.core.text import LabelBase
+import random
+from langchain import OpenAI, SQLDatabase, SQLDatabaseChain, HuggingFaceHub
+from langchain.utilities import SerpAPIWrapper
+from kivy_garden.frostedglass import FrostedGlass
+from kivy.core.window import WindowBase
+from langchain.memory.prompt import ENTITY_MEMORY_CONVERSATION_TEMPLATE
+from langchain.memory import ConversationEntityMemory
+from langchain.schema import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage
+)
+from langchain.prompts.chat import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    AIMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
+from langchain.prompts.prompt import PromptTemplate
+from langchain.chains import LLMChain, ConversationChain
+from langchain.agents import create_csv_agent
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import SQLDatabaseSequentialChain
+from langchain.agents import Tool
+from langchain.agents import AgentType
+from langchain.agents import initialize_agent
+from langchain.tools.file_management import (
+    ReadFileTool,
+    CopyFileTool,
+    DeleteFileTool,
+    MoveFileTool,
+    WriteFileTool,
+    ListDirectoryTool,
+)
+from langchain.agents.agent_toolkits import FileManagementToolkit
+from langchain.agents.agent_toolkits import GmailToolkit
+from datetime import datetime
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.llms import OpenAI
+from langchain.memory import VectorStoreRetrieverMemory
+from langchain.chains import ConversationChain
+from langchain.prompts import PromptTemplate
+import faiss
+from langchain.docstore import InMemoryDocstore
+from langchain.vectorstores import FAISS
+from langchain import LLMChain
+from langchain.agents import LLMSingleActionAgent
+from langchain.agents import ZeroShotAgent, AgentExecutor
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import MessagesPlaceholder
+from langchain.agents import OpenAIFunctionsAgent, StructuredChatAgent
+from langchain.prompts.base import BasePromptTemplate
+from langchain.prompts.chat import BaseMessagePromptTemplate
+from langchain.memory.chat_message_histories import RedisChatMessageHistory
+import pyjokes
+from langchain.agents.agent_toolkits import SQLDatabaseToolkit
+from langchain.sql_database import SQLDatabase
+from langchain.tools.sql_database.tool import QuerySQLDataBaseTool
+from langchain.tools import StructuredTool
+import ast
+from langchain import HuggingFaceHub
+import speech_recognition
+import pyttsx3
+from io import BytesIO
+from kivy.cache import Cache
 import os
 # os.environ["KIVY_VIDEO"] = "python-vlc"
 from kivy.app import App
@@ -16,7 +82,7 @@ from kivymd.uix.anchorlayout import MDAnchorLayout
 from kivymd.theming import ThemeManager
 from kivymd.uix.button import *
 from kivymd.uix.card import MDCard
-from kivymd.uix.toolbar.toolbar import MDTopAppBar
+from kivymd.uix.toolbar import MDTopAppBar
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.scrollview import MDScrollView
 from kivymd.uix.screenmanager import ScreenManager, MDScreenManager
@@ -33,7 +99,6 @@ from kivy.graphics import Color
 from kivy.animation import Animation
 from kivymd.toast import toast
 from kivy.graphics.vertex_instructions import Rectangle
-from kivymd.uix.navigationdrawer import MDNavigationDrawer
 from kivy.clock import Clock
 import mysql.connector
 from kivy.core.window import Window
@@ -74,7 +139,15 @@ from datetime import date
 from colorthief import ColorThief
 from PIL import Image as Im
 from kivymd.uix.menu import MDDropdownMenu
-
+from kivy.storage.jsonstore import JsonStore
+from kivymd.uix.spinner import MDSpinner
+from kivymd.uix.navigationrail import (
+    MDNavigationRail,
+    MDNavigationRailMenuButton,
+    MDNavigationRailFabButton,
+    MDNavigationRailItem,
+)
+import requests
 # Window.fullscreen = 'auto'
 # Window.borderless = True
 
@@ -242,6 +315,23 @@ class Database():
         except Exception:
             raise Exception
 
+    def jsondata(email, password):
+        store = JsonStore('app_details.json')
+        store.put('login_details', email=email, password=password)
+
+    def get_jsondata():
+        store = JsonStore('app_details.json')
+        username = store.get('login_details')['email']
+        password = store.get('login_details')['password']
+        if username:
+            return username, password
+        else:
+            return None
+
+
+'''Window.borderless = True
+Window.fullscreen = 'auto'''
+
 
 class WelcomeScreen(MDScreen):
     def __init__(self, **kwargs):
@@ -279,21 +369,30 @@ class WelcomeScreen(MDScreen):
 class LoginScreen(MDScreen, MDFloatLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        LabelBase.register(
+            name='cracky', fn_regular='fonts/CurlzMT.ttf', fn_bold='fonts/CURLZ.ttf')
 
-        self.login_form = MDBoxLayout(orientation='vertical',
-                                      size_hint=(0.5, 0.5),
-                                      pos_hint={'center_x': 0.5, 'center_y': 0.5})
+        self.login_form = MDCard(orientation='vertical',
+                                 size_hint=(0.3, 0.5),
+                                 pos_hint={'center_x': 0.5, 'center_y': 0.5},
+                                 elevation=5, spacing="10dp", padding="40dp")  # , md_bg_color=[1, 0, 0, 0])
 
-        self.email = MDTextField(
-            hint_text="Email", helper_text="Invalid Email", helper_text_mode='on_error', line_anim=True)
-        self.password = MDTextField(hint_text="Password", password=True,
-                                    helper_text="Invalid Password", helper_text_mode='on_error', line_anim=True)
+        self.label = MDLabel(text='[font=cracky]Music Player App[/font]', pos_hint={'top': 1}, markup=True, font_family="fonts/CurlzMT.ttf",  # , theme_text_color='Custom',
+                             halign='center', size_hint=(1, 0.0005), valign='top', font_style="H2", bold=True)
+        self.login_form.add_widget(self.label)
+        self.add_widget(FitImage(source='images/login.jpg'))
+
+        self.email = MDTextField(mode='rectangle',
+                                 hint_text="Email", helper_text="Invalid Email", helper_text_mode='on_error', line_anim=True, size_hint=(0.8, 0.5), pos_hint={'center_x': 0.5, 'top': 1})
+        self.password = MDTextField(hint_text="Password", password=True, mode='rectangle',
+                                    helper_text="Invalid Password", helper_text_mode='on_error', line_anim=True, size_hint=(0.8, 0.5), pos_hint={'center_x': 0.5, 'top': 1}, icon_right='eye-off')
+        self.password.bind(on_icon_right=self.icon)
 
         self.login_form.add_widget(self.email)
         self.login_form.add_widget(self.password)
 
         self.login_button = MDRectangleFlatButton(
-            text="Login", pos_hint={'center_x': 0.5, 'center_y': 0.6})
+            text="Login", pos_hint={'center_x': 0.5, 'center_y': 0.7})
         self.login_button.bind(on_press=lambda x: self.login())
         self.login_form.add_widget(self.login_button)
         self.create_account_button = MDRectangleFlatButton(
@@ -301,8 +400,35 @@ class LoginScreen(MDScreen, MDFloatLayout):
         self.create_account_button.bind(on_release=lambda y: self.reg())
 
         self.login_form.add_widget(self.create_account_button)
+        # self.icon_button = MDIconButton(
+        #    icon='eye-off', theme_text_color="Hint", pos_hint={'center_x': 0.8, 'center_y': 0.8})
+        # self.login_form.add_widget(self.icon_button)
+        # self.icon_button.pos_hint = {'center_x': 0.5, 'top': 1}
 
         self.add_widget(self.login_form)
+
+    '''def on_pre_enter(self, *args):
+        data = Database.get_jsondata()
+
+        if data != None:
+
+            username = data[0]
+            password = data[1]
+
+            check = Database.login(email=username,
+                                   password=password)
+
+            if check:
+                self.manager.add_widget(MainScreen(name='main'))
+                self.manager.current = 'main'''
+
+    def icon(self, instance):
+        if instance.icon_right == 'eye-off':
+            instance.icon_right = 'eye-on'
+            instance.password = False
+        else:
+            instance.icon_right = 'eye-off'
+            instance.password = True
 
     def login(self):
         status = Database.login(email=self.email.text,
@@ -310,6 +436,8 @@ class LoginScreen(MDScreen, MDFloatLayout):
         print(status)
         if status:
             print('Logged in')
+            Database.jsondata(email=self.email.text,
+                              password=self.password.text)
             self.manager.add_widget(MainScreen(name='main'))
             self.manager.current = 'main'
         else:
@@ -319,6 +447,13 @@ class LoginScreen(MDScreen, MDFloatLayout):
 
     def reg(self):
         self.manager.current = 'registration'
+
+
+os.environ['OPENAI_API_KEY'] = "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"
+os.environ['SERPAPI_API_KEY'] = "edad3081de97572290efcd436f7b82de90f0bef23ccf17de73a283d9d77d1bce"
+
+repo_id = "google/flan-t5-xl"
+os.environ['HUGGINGFACEHUB_API_TOKEN'] = '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'
 
 
 class MainScreen(MDScreen):
@@ -346,9 +481,223 @@ class MainScreen(MDScreen):
         self.song_image = 'None'
         self.counter = 0
 
+        self.scroll_view = MDScrollView(do_scroll_x=False, pos_hint={'top': 0.93}, size_hint_y=0.9, scroll_wheel_distance=5, scroll_type=['bars', 'content'], smooth_scroll_end=75,
+                                        always_overscroll=False, bar_margin=0.5, bar_width=7, bar_inactive_color=[0, 0, 0, 0])
+        self.add_widget(self.scroll_view)
+
+        self.main_layout = MDBoxLayout(orientation='vertical', size_hint_y=None,
+                                       height="1800dp", width="50dp", spacing="10dp", padding="20dp")
+        self.scroll_view.add_widget(self.main_layout)
+
+        self.recommended_section = MDGridLayout(
+            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="30dp", padding="25dp", pos_hint={'center_x': 0.545, 'top': 1})
+        self.recommended_label = MDLabel(
+            text='Recommended Songs', font_style='H4', size_hint_y=None, height=Window.minimum_height, bold=True, pos_hint={'center_x': 0.545, 'top': 1})
+        self.main_layout.add_widget(self.recommended_label)
+        self.main_layout.add_widget(self.recommended_section)
+
+        self.malayalam_section = MDGridLayout(
+            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="30dp", padding="25dp", pos_hint={'center_x': 0.545, 'top': 1})
+        self.malayalam_label = MDLabel(
+            text='Malayalam Songs', font_style='H4', size_hint_y=None, height=Window.minimum_height, bold=True, pos_hint={'center_x': 0.545, 'top': 1})
+        self.main_layout.add_widget(self.malayalam_label)
+        self.main_layout.add_widget(self.malayalam_section)
+
+        self.english_section = MDGridLayout(
+            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="30dp", padding="25dp", pos_hint={'center_x': 0.545, 'top': 1})
+        self.english_label = MDLabel(text='English Songs', font_style='H4',
+                                     size_hint_y=None, height=Window.minimum_height, bold=True, pos_hint={'center_x': 0.545, 'top': 1})
+        self.main_layout.add_widget(self.english_label)
+        self.main_layout.add_widget(self.english_section)
+
+        self.hindi_section = MDGridLayout(
+            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="30dp", padding="25dp", pos_hint={'center_x': 0.545, 'top': 1})
+        self.hindi_label = MDLabel(text='Hindi Songs', font_style='H4',
+                                   size_hint_y=None, height=Window.minimum_height, bold=True, pos_hint={'center_x': 0.545, 'top': 1})
+        self.main_layout.add_widget(self.hindi_label)
+        self.main_layout.add_widget(self.hindi_section)
+
+        self.tamil_section = MDGridLayout(
+            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="30dp", padding="25dp", pos_hint={'center_x': 0.545, 'top': 1})
+        self.tamil_label = MDLabel(text='Tamil Songs', font_style='H4',
+                                   size_hint_y=None, height=Window.minimum_height, bold=True, pos_hint={'center_x': 0.545, 'top': 1})
+        self.main_layout.add_widget(self.tamil_label)
+        self.main_layout.add_widget(self.tamil_section)
+
+        self.false_section = MDGridLayout(
+            size_hint_y=0.5, width=Window.minimum_width, cols=10, spacing="30dp", padding="25dp", pos_hint={'center_x': 0.545, 'top': 1})
+        self.false_label = MDLabel(
+            text='', font_style='H4', size_hint_y=None, height=Window.minimum_height, bold=True, pos_hint={'center_x': 0.545, 'top': 1})
+        self.main_layout.add_widget(self.false_label)
+        self.main_layout.add_widget(self.false_section)
+
+        # Add cards to card layout
+        # self.songs = get_songs_from_database() # Function to get songs from database
+        # for song in self.songs:
+        # l = ['Jeevamshamayi', 'Chundari Penne', 'Kaliyuga', 'Nangeli Poove', 'Harivarasanam', 'Gulumaal', 'Etho Nidrathan', 'Paathiramazhayetho', 'Thee Minnal', 'Onnam Padimele']
+        songs = Database.music(limit=24)
+        s1 = songs[:8]
+        print(s1)
+        s2 = songs[8:16]
+        s3 = songs[16:]
+        for i in s1:
+            # songs = Database.music(limit=1)
+            # print(songs)
+            # if song.section == 'recommended':
+            self.card1 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
+                                ripple_behavior=True, focus_behavior=True, elevation=0, focus_color=(31, 31, 31, 0.15))  # , unfocus_color = (40,40,40,0.1), md_bg_color = (0,0,0,0))
+            self.card1.add_widget(Image(source=i[3]))
+            self.card1.add_widget(
+                MDLabel(text=i[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
+            self.card1.add_widget(
+                MDLabel(text=i[2], size_hint=(1, 0.2), font_style='Subtitle2'))
+            self.card1.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
+            self.recommended_section.add_widget(self.card1)
+
+        for x in s2:
+
+            # songs = Database.music(limit=1)
+            self.card2 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
+                                ripple_behavior=True, focus_behavior=True, elevation=0, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
+            self.card2.add_widget(Image(source=x[3]))
+            self.card2.add_widget(
+                MDLabel(text=x[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
+            self.card2.add_widget(
+                MDLabel(text=x[2], size_hint=(1, 0.2), font_style='Subtitle2'))
+            self.card2.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
+            self.malayalam_section.add_widget(self.card2)
+
+        for y in s3:
+
+            # songs = Database.music(limit=1)
+            self.card3 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
+                                ripple_behavior=True, focus_behavior=True, elevation=0, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
+            self.card3.add_widget(Image(source=y[3]))
+            self.card3.add_widget(
+                MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
+            self.card3.add_widget(
+                MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
+            self.card3.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
+            self.english_section.add_widget(self.card3)
+
+            # songs = Database.music(limit=1)
+            self.card4 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
+                                ripple_behavior=True, focus_behavior=True, elevation=0, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
+            self.card4.add_widget(Image(source=y[3]))
+            self.card4.add_widget(
+                MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
+            self.card4.add_widget(
+                MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
+            self.card4.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
+            self.hindi_section.add_widget(self.card4)
+
+            # songs = Database.music(limit=1)
+            self.card5 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
+                                ripple_behavior=True, focus_behavior=True, elevation=0, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
+            self.card5.add_widget(Image(source=y[3]))
+            self.card5.add_widget(
+                MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
+            self.card5.add_widget(
+                MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
+            self.card5.bind(on_release=self.song,
+                            on_enter=self.enter, on_leave=self.leave)
+            self.tamil_section.add_widget(self.card5)
+
+        self.layout = MDCard(size_hint=(1, 0.1), pos_hint={
+            'center_x': 0.5, 'bottom': 1}, md_bg_color=(0, 0, 0, 1), elevation=3)
+        self.layout.bind(on_press=self.se)
+        self.add_widget(self.layout)
+        self.sub_layout1 = MDBoxLayout(size_hint_x=None, width=self.height)
+        self.layout.add_widget(self.sub_layout1)
+
+        self.img = Image(source='images/black.jpg',
+                         pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint=(0.75, 0.75))
+        self.sub_layout1.add_widget(self.img)
+
+        self.sub_layout2 = MDBoxLayout(orientation='horizontal')
+        self.layout.add_widget(self.sub_layout2)
+
+        self.sub_layout2_1 = MDBoxLayout(
+            orientation='vertical', size_hint_x=0.2, spacing="0.5dp", padding="20dp")
+        self.sub_layout2.add_widget(self.sub_layout2_1)
+
+        self.song_n = MDLabel(text='', halign="left")
+        self.sub_layout2_1.add_widget(self.song_n)
+        self.song_auth = MDLabel(text='', halign="left")
+        self.sub_layout2_1.add_widget(self.song_auth)
+
+        self.sub_layout5 = MDBoxLayout(orientation='vertical', size_hint_x=0.8, spacing="1dp", padding="20dp", pos_hint={
+            'center_x': 0.5, 'center_y': 0.5})
+        self.sub_layout2.add_widget(self.sub_layout5)
+
+        self.sub_layout2_1_1 = MDBoxLayout(orientation='horizontal', spacing="5dp", pos_hint={
+            'center_x': 0.88, 'center_y': 0.3})
+        self.sub_layout5.add_widget(self.sub_layout2_1_1)
+
+        # self.sub_layout2_1_1.add_widget(MDLabel(text = "Song Name", halign = "left"))
+        self.skip_prev = MDIconButton(
+            icon='skip-previous', halign="center", disabled=True)
+        self.skip_prev.bind(
+            on_press=self.previous, on_breh=self.enter, on_leave=self.leave)
+        self.sub_layout2_1_1.add_widget(self.skip_prev)
+        self.play_pause = MDIconButton(icon='play', halign="center", icon_color=[
+            0, 0, 0, 1], theme_icon_color="Custom", md_bg_color="white", disabled=True)
+        self.sub_layout2_1_1.add_widget(self.play_pause)
+        self.skip_next = MDIconButton(
+            icon='skip-next', halign="center", disabled=True)
+        self.skip_next.bind(on_press=self.next,
+                            on_button_enter=self.enter, on_button_leave=self.leave)
+        self.sub_layout2_1_1.add_widget(self.skip_next)
+        # self.sub_layout2_1_1.add_widget(MDLabel(text = "Author Name", halign = "left"))
+
+        self.sub_layout5_2 = MDBoxLayout(
+            orientation='horizontal', spacing="0.1dp", size_hint_x=0.8, padding="5dp")
+        self.sub_layout5.add_widget(self.sub_layout5_2)
+
+        self.start = MDLabel(text="00:00", size_hint_x=0.2,
+                             font_style="Subtitle2", halign="right")
+        self.sub_layout5_2.add_widget(self.start)
+        self.slider = MDSlider(
+            size_hint_x=0.7, hint=False)
+        # self.slider.set_thumb_icon(path='images/test.png')
+        self.sub_layout5_2.add_widget(self.slider)
+        self.end = MDLabel(text="00:00", size_hint_x=0.1,
+                           font_style="Subtitle2")
+        self.sub_layout5_2.add_widget(self.end)
+
+        self.sub_layout_3 = MDAnchorLayout(
+            anchor_x='center', anchor_y='center', size_hint=(0.2, 1))
+        self.sub_layout2.add_widget(self.sub_layout_3)
+
+        self.sub_layout_3_1 = MDBoxLayout(orientation='horizontal', size_hint=(
+            0.4, None), height=Window.minimum_height, spacing="3dp")
+        self.sub_layout_3.add_widget(self.sub_layout_3_1)
+
+        self.switch = MDIconButton(icon='music-accidental-double-flat', on_press=lambda x: Thread(
+            target=self.booster, name='Song Booster').start())
+        self.sub_layout_3_1.add_widget(self.switch)
+        self.repeat = MDIconButton(icon='repeat-off')
+        self.sub_layout_3_1.add_widget(self.repeat)
+        self.repeat.bind(on_release=self.song_repeat,
+                         on_enter=self.enter, on_leave=self.leave)
+        self.mute = MDIconButton(
+            icon='music-note', disabled=True, icon_color=[0, 0.5, 1, 1], theme_icon_color="Custom")
+        self.mute.bind(on_press=self.mute_func,
+                       on_enter=self.enter, on_leave=self.leave)
+        self.sub_layout_3_1.add_widget(self.mute)
+
         self.top_bar = MDTopAppBar(left_action_items=[['menu', lambda x: self.nav_drawer.set_state('open'), "Menu"]],
                                    title="Music Player",
-                                   right_action_items=[['magnify', lambda x: self.search(), "Search"], ['tools', lambda x: x]], pos_hint={'top': 1.0})
+                                   right_action_items=[['magnify', lambda x: self.search(), "Search"], ['microphone', lambda x: Thread(target=self.mic_ask()).start()]], pos_hint={'top': 1.0},
+                                   md_bg_color=[1, 0, 0, 0],
+                                   anchor_title='left',
+                                   elevation=0
+                                   )
+        print("Colour:", self.top_bar.md_bg_color)
         self.add_widget(self.top_bar)
 
         self.nav_drawer = MDNavigationDrawer(
@@ -375,9 +724,11 @@ class MainScreen(MDScreen):
                                on_enter=self.enter, on_leave=self.leave)
         self.nav_menu.add_widget(self.nav_text_art)
 
-        self.nav_text_art = MDNavigationDrawerItem(
+        self.chatbot = MDNavigationDrawerItem(
             text='Jaadhu', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
-        self.nav_menu.add_widget(self.nav_text_art)
+        self.nav_menu.add_widget(self.chatbot)
+        self.chatbot.bind(on_release=self.to_chat,
+                          on_enter=self.enter, on_leave=self.leave)
 
         self.nav_divider = MDNavigationDrawerDivider()
         self.nav_menu.add_widget(self.nav_divider)
@@ -396,143 +747,55 @@ class MainScreen(MDScreen):
                              on_enter=self.enter, on_leave=self.leave)
         self.nav_menu.add_widget(self.nav_logout)
 
+        self.nav_rail = MDNavigationRail()
+        self.nav_rail.add_widget(MDNavigationRailItem(
+            text='python', icon='language-python'))
+
         self.nav_layout = MDNavigationLayout()
+        # self.nav_layout.add_widget(self.nav_rail)
         self.nav_drawer.add_widget(self.nav_menu)
         self.nav_layout.add_widget(self.nav_drawer)
-
-        self.scroll_view = MDScrollView(do_scroll_x=False, pos_hint={'top': 0.93}, size_hint_y=0.9, scroll_wheel_distance=5, scroll_type=['bars', 'content'], smooth_scroll_end=75,
-                                        always_overscroll=False, bar_margin=0.5, bar_width=7, bar_inactive_color=[0, 0, 0, 0])
-        self.add_widget(self.scroll_view)
-
-        self.main_layout = MDBoxLayout(orientation='vertical', size_hint_y=None,
-                                       height="1800dp", width="50dp", spacing="10dp", padding="20dp")
-        self.scroll_view.add_widget(self.main_layout)
-
-        self.recommended_section = MDGridLayout(
-            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="20dp", padding="20dp")
-        self.recommended_label = MDLabel(
-            text='Recommended Songs', font_style='H4', size_hint_y=None, height=Window.minimum_height, bold=True)
-        self.main_layout.add_widget(self.recommended_label)
-        self.main_layout.add_widget(self.recommended_section)
-
-        self.malayalam_section = MDGridLayout(
-            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="20dp", padding="20dp")
-        self.malayalam_label = MDLabel(
-            text='Malayalam Songs', font_style='H4', size_hint_y=None, height=Window.minimum_height, bold=True)
-        self.main_layout.add_widget(self.malayalam_label)
-        self.main_layout.add_widget(self.malayalam_section)
-
-        self.english_section = MDGridLayout(
-            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="20dp", padding="20dp")
-        self.english_label = MDLabel(text='English Songs', font_style='H4',
-                                     size_hint_y=None, height=Window.minimum_height, bold=True)
-        self.main_layout.add_widget(self.english_label)
-        self.main_layout.add_widget(self.english_section)
-
-        self.hindi_section = MDGridLayout(
-            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="20dp", padding="20dp")
-        self.hindi_label = MDLabel(text='Hindi Songs', font_style='H4',
-                                   size_hint_y=None, height=Window.minimum_height, bold=True)
-        self.main_layout.add_widget(self.hindi_label)
-        self.main_layout.add_widget(self.hindi_section)
-
-        self.tamil_section = MDGridLayout(
-            size_hint_y=5, width=Window.minimum_width, cols=10, spacing="20dp", padding="20dp")
-        self.tamil_label = MDLabel(text='Tamil Songs', font_style='H4',
-                                   size_hint_y=None, height=Window.minimum_height, bold=True)
-        self.main_layout.add_widget(self.tamil_label)
-        self.main_layout.add_widget(self.tamil_section)
-
-        self.false_section = MDGridLayout(
-            size_hint_y=0.5, width=Window.minimum_width, cols=10, spacing="20dp", padding="20dp")
-        self.false_label = MDLabel(
-            text='', font_style='H4', size_hint_y=None, height=Window.minimum_height, bold=True)
-        self.main_layout.add_widget(self.false_label)
-        self.main_layout.add_widget(self.false_section)
-
-        # Add cards to card layout
-        # self.songs = get_songs_from_database() # Function to get songs from database
-        # for song in self.songs:
-        # l = ['Jeevamshamayi', 'Chundari Penne', 'Kaliyuga', 'Nangeli Poove', 'Harivarasanam', 'Gulumaal', 'Etho Nidrathan', 'Paathiramazhayetho', 'Thee Minnal', 'Onnam Padimele']
-        songs = Database.music(limit=30)
-        s1 = songs[:10]
-        print(s1)
-        s2 = songs[10:20]
-        s3 = songs[20:30]
-        for i in s1:
-            # songs = Database.music(limit=1)
-            # print(songs)
-            # if song.section == 'recommended':
-            self.card1 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
-                                ripple_behavior=True, focus_behavior=True, elevation=5, focus_color=(31, 31, 31, 0.15))  # , unfocus_color = (40,40,40,0.1), md_bg_color = (0,0,0,0))
-            self.card1.add_widget(Image(source=i[3]))
-            self.card1.add_widget(
-                MDLabel(text=i[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
-            self.card1.add_widget(
-                MDLabel(text=i[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card1.bind(on_release=self.song,
-                            on_enter=self.enter, on_leave=self.leave)
-            self.recommended_section.add_widget(self.card1)
-
-        for x in s2:
-
-            # songs = Database.music(limit=1)
-            self.card2 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
-                                ripple_behavior=True, focus_behavior=True, elevation=3, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
-            self.card2.add_widget(Image(source=x[3]))
-            self.card2.add_widget(
-                MDLabel(text=x[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
-            self.card2.add_widget(
-                MDLabel(text=x[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card2.bind(on_release=self.song,
-                            on_enter=self.enter, on_leave=self.leave)
-            self.malayalam_section.add_widget(self.card2)
-
-        for y in s3:
-
-            # songs = Database.music(limit=1)
-            self.card3 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
-                                ripple_behavior=True, focus_behavior=True, elevation=3, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
-            self.card3.add_widget(Image(source=y[3]))
-            self.card3.add_widget(
-                MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
-            self.card3.add_widget(
-                MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card3.bind(on_release=self.song,
-                            on_enter=self.enter, on_leave=self.leave)
-            self.english_section.add_widget(self.card3)
-
-            # songs = Database.music(limit=1)
-            self.card4 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
-                                ripple_behavior=True, focus_behavior=True, elevation=3, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
-            self.card4.add_widget(Image(source=y[3]))
-            self.card4.add_widget(
-                MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
-            self.card4.add_widget(
-                MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card4.bind(on_release=self.song,
-                            on_enter=self.enter, on_leave=self.leave)
-            self.hindi_section.add_widget(self.card4)
-
-            # songs = Database.music(limit=1)
-            self.card5 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
-                                ripple_behavior=True, focus_behavior=True, elevation=3, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
-            self.card5.add_widget(Image(source=y[3]))
-            self.card5.add_widget(
-                MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
-            self.card5.add_widget(
-                MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
-            self.card5.bind(on_release=self.song,
-                            on_enter=self.enter, on_leave=self.leave)
-            self.tamil_section.add_widget(self.card5)
-
+        self.add_widget(
+            MDNavigationRail(
+                MDNavigationRailItem(
+                    text="Python",
+                    icon="language-python",
+                    # size_hint=(1.2, 1.2)
+                ),
+                MDNavigationRailItem(
+                    text="JavaScript",
+                    icon="language-javascript",
+                    # size_hint=(1.2, 1.2)
+                ),
+                MDNavigationRailItem(
+                    text="CPP",
+                    icon="language-cpp",
+                    # size_hint=(1.2, 1.2)
+                ),
+                MDNavigationRailItem(
+                    text="Git",
+                    icon="git",
+                    # size_hint=(1.2, 1.2)
+                ),
+                md_bg_color=(1, 0, 0, 0),
+                pos_hint={'top': 0.9},
+                # size_hint=(0.03, 10),
+                # spacing="1000dp"
+            )
+        )
         self.add_widget(self.nav_layout)
 
-    def enter(self, dt):
-        Window.set_system_cursor(cursor_name='hand')
+    def to_chat(self, dt):
+        self.nav_drawer.set_state("close")
+        self.manager.current = 'chat'
 
-    def leave(self, dt):
+    def enter(self, instance):
+        Window.set_system_cursor(cursor_name='hand')
+        instance.elevation = 3
+
+    def leave(self, instance):
         Window.set_system_cursor(cursor_name='arrow')
+        instance.elevation = 0
 
     def resize(self, window, width, height):
         self.rect.size = Window.size
@@ -666,7 +929,8 @@ class MainScreen(MDScreen):
             card.focus_color = (31, 31, 31, 0.15)
 
         if self.counter == 0:
-            self.layout = MDCard(size_hint=(1, 0.1), pos_hint={
+            self.counter += 1
+            '''self.layout = MDCard(size_hint=(1, 0.1), pos_hint={
                                  'center_x': 0.5, 'bottom': 1}, md_bg_color=(0, 0, 0, 1), elevation=3)
             self.layout.bind(on_press=self.se)
             self.add_widget(self.layout)
@@ -732,7 +996,7 @@ class MainScreen(MDScreen):
             self.sub_layout5_2.add_widget(self.start)
             self.slider = MDSlider(
                 size_hint_x=0.7, hint=False)
-            self.slider.set_thumb_icon(path='images/test.png')
+            # self.slider.set_thumb_icon(path='images/test.png')
             self.sub_layout5_2.add_widget(self.slider)
             self.end = MDLabel(text="00:00", size_hint_x=0.1,
                                font_style="Subtitle2")
@@ -758,7 +1022,7 @@ class MainScreen(MDScreen):
             self.mute.bind(on_press=self.mute_func,
                            on_enter=self.enter, on_leave=self.leave)
             self.sub_layout_3_1.add_widget(self.mute)
-
+'''
             # self.sub_layout.add_widget(MDLabel(text="Song Name\nAuthor Name", size_hint = (0.01,0.3), halign = 'left'))
             # self.layout.add_widget(MDIconButton(icon="play", pos_hint = {'center_x': 0.5, 'center_y': 0.5, 'right':0.5}))
 
@@ -882,6 +1146,27 @@ class MainScreen(MDScreen):
         if self.song_name != self.prev_sn:
             Clock.schedule_once(self.on_pre_enter)
 
+    def mic_ask(self):
+        self.recognizer = speech_recognition.Recognizer()
+        self.speaker = pyttsx3.init()
+        self.speaker.setProperty("rate", 150)
+        self.speaker.say("Hey what's up")
+        self.speaker.runAndWait()
+        try:
+            print(0)
+            with speech_recognition.Microphone() as mic:
+                self.recognizer.adjust_for_ambient_noise(mic, duration=0.2)
+
+                audio = self.recognizer.listen(mic)
+                text = self.recognizer.recognize_google(audio).lower()
+                print(1, text)
+
+                x = AIChatBot.output(text)
+                self.speaker.say(x)
+                self.speaker.runAndWait()
+        except Exception as e:
+            print(e)
+
 
 class RegistrationScreen(MDScreen):
     def __init__(self, **kwargs):
@@ -927,6 +1212,10 @@ class RegistrationScreen(MDScreen):
         if self.password.text == self.conf_pass.text:
             Database.create_account(
                 self.username.text, self.email.text, self.phone.text, self.password.text)
+            Cache.append(category='login_details',
+                         key='username', obj=self.email)
+            Cache.append(category='login_details',
+                         key='password', obj=self.password)
             self.manager.add_widget(MainScreen(name='main'))
             self.manager.current = 'main'
         else:
@@ -938,6 +1227,10 @@ class AITextArtScreen(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.running = False
+        self.back_button = MDIconButton(
+            icon='chevron-left', pos_hint={'top': 1, 'left': 1})
+        self.back_button.bind(on_press=self.go_back)
+        self.add_widget(self.back_button)
         self.layout = MDBoxLayout(orientation='vertical')
         self.text_input = MDTextField(mode='round',
                                       multiline=False, size_hint_y=None, height=50, hint_text='Enter text here')
@@ -955,24 +1248,29 @@ class AITextArtScreen(MDScreen):
         self.add_widget(self.layout)
 
     def generate_image(self, instance):
+        API_TOKEN = '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'
+        API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
+        headers = {"Authorization": f"Bearer {API_TOKEN}"}
         self.running = True
         text = self.text_input.text
         if not text:
             return
         self.image_space.source = 'images/gi.png'
 
-        openai.api_key = "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"
+        response = requests.post(API_URL, headers=headers, json={
+            "inputs": text,
+        })
 
-        image = openai.Image.create(
-            prompt=text,
-            size="1024x1024",
-            n=1
-        )
-        image_url = image['data'][0]['url']
-        self.image_space.source = image_url
+        image = Im.open(BytesIO(response.content))
+        image.save('generated_image.png')
+
+        self.image_space.source = 'generated_image.png'
         self.image_space.size_hint = (0.3, 0.3)
         self.image_space.opacity = 1
         self.running = False
+
+    def go_back(self, dt):
+        self.manager.current = 'main'
 
 
 class MusicPlayer(MDScreen):
@@ -1753,15 +2051,15 @@ class Playlist(MDScreen):
 
                 self.new_img = Image(source=self.playlists[y][2], pos_hint={
                                      'center_x': 0.5, 'center_y': 0.5}, size_hint_y=1, keep_ratio=False, allow_stretch=True)
-                self.card_new.add_widget(self.img_new)
+                self.new_card.add_widget(self.img_new)
 
                 self.new_play_name = MDLabel(
                     text=self.playlists[y][1], bold=True, font_style='H5', size_hint_y=0.2)
-                self.card_new.add_widget(self.play_name_new)
+                self.new_card.add_widget(self.play_name_new)
 
                 self.new_play_date = MDLabel(
                     text=self.playlists[y][4], font_style="Subtitle2", size_hint_y=0.1)
-                self.card_new.add_widget(self.play_date_new)
+                self.new_card.add_widget(self.play_date_new)
             self.prev_len = len(self.playlists)
 
         elif self.counter > 0:
@@ -1801,8 +2099,14 @@ class Playlist(MDScreen):
                     text=self.playlists[i][4], font_style="Subtitle2", size_hint_y=0.1)
                 self.card.add_widget(self.play_date)
 
+            self.create_play = MDFloatingActionButton(
+                icon='plus', pos_hint={'top': 0.1, 'right': 0.95}, elevation=5, icon_size="35dp")
+            self.add_widget(self.create_play)
+            self.create_play.bind(on_release=self.play_details)
+
     def playlist_songs(self, instance):
         try:
+            print("TRYING", instance.id)
             self.manager.get_screen(
                 "playlist_songs").playlist_id = int(instance.id)
             print(1)
@@ -1815,6 +2119,7 @@ class Playlist(MDScreen):
                 "playlist_songs").play_date = instance.children[0].text
             self.manager.current = 'playlist_songs'
         except:
+            print("EXCEPTION", self.card_new.id)
             self.manager.get_screen(
                 "playlist_songs").playlist_id = int(self.card_new.id)
             self.manager.get_screen(
@@ -1836,6 +2141,7 @@ class Playlist_Songs(MDScreen):
         self.play_date = None
 
     def on_pre_enter(self):
+        self.clear_widgets()
         self.songs = Database.playlist_songs(
             id=self.playlist_id, order_by="created")
         print(self.songs)
@@ -1852,11 +2158,12 @@ class Playlist_Songs(MDScreen):
         with self.canvas:
             Color(0.5, 0.5, 0.5,
                   mode='hex')
+            print(self.hex)
             self.bg_grad = Rectangle(texture=Gradient.vertical(get_color_from_hex(self.hex[1]), get_color_from_hex(self.hex[0])),
-                                     pos=[0, -8], size=[2000, 1000])
+                                     pos=[0, -8], size=[1920, 1080])
 
-        self.bar = MDTopAppBar(title=self.play_name, shadow_color=(0, 0, 0, 0), left_action_items=[
-                               ["arrow-left", lambda x: self.go_back(), 'back']], pos_hint={'top': 1})
+        self.bar = MDTopAppBar(title=self.play_name, md_bg_color=(1, 0, 0, 0), left_action_items=[
+                               ["arrow-left", lambda x: self.go_back(), 'back']], pos_hint={'top': 1}, elevation=0, anchor_title="left")
         self.add_widget(self.bar)
 
         self.scroll = MDScrollView(pos_hint={'top': 0.93}, scroll_wheel_distance=5, scroll_type=['bars', 'content'], smooth_scroll_end=75,
@@ -2304,19 +2611,348 @@ class Playlist_Songs(MDScreen):
         self.manager.transition.direction = 'left'
 
 
+class ChatUI(MDScreen):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.counter = 1
+        self.list = []
+        self.change = False
+
+        with self.canvas.before:
+            self.rect = Rectangle(texture=Gradient.vertical(get_color_from_hex('#EBC7E6'),
+                                                            get_color_from_hex(
+                                                                '#BFACE2'),
+                                                            get_color_from_hex(
+                                                                '#A084DC'),
+                                                            get_color_from_hex('#645CBB')), size=Window.size)
+            Window.bind(on_resize=self.resize)
+
+        self.back_button = MDIconButton(
+            icon='chevron-left', pos_hint={'top': 1, 'left': 1})
+        self.back_button.bind(on_press=self.go_back)
+        self.add_widget(self.back_button)
+
+        self.layout = MDCard(size_hint=(1, 0.1), pos_hint={
+            'center_x': 0.5, 'bottom': 1}, md_bg_color=get_color_from_hex('#a5d7e8'), elevation=3)
+
+        self.sub_layout2 = MDBoxLayout(
+            size_hint=(None, None),
+            adaptive_size=True,
+            padding=[500, 30, 10, 50],
+            spacing="20px", pos_hint={
+                'center_x': 0.5, 'bottom': 1}
+        )
+
+        self.scroll = MDScrollView(do_scroll_x=False, pos_hint={'top': 0.95}, size_hint_y=0.85, scroll_wheel_distance=5, scroll_type=['bars', 'content'], smooth_scroll_end=75,
+                                   always_overscroll=False, bar_margin=0.5, bar_width=7, bar_inactive_color=[0, 0, 0, 0], background_hue='100', effect_cls=OpacityScrollEffect)
+        self.add_widget(self.scroll)
+
+        self.sub_layout = MDStackLayout(size_hint=(None, None),
+                                        spacing="30dp", adaptive_height=True, width="1920dp", padding=[135, 20, 20, 30])
+        self.scroll.add_widget(self.sub_layout)
+
+        self.sub_layout3 = MDBoxLayout(
+            padding=[8, 3, 2, 2],
+            orientation='horizontal', size_hint=(None, None), adaptive_height=True, spacing="50px", width="1800dp"
+        )
+        self.sub_layout.add_widget(self.sub_layout3)
+
+        self.upload = Button(background_normal='images/ai.jpg',
+                             size_hint=(None, None), background_down='images/loading.png', valign='center', border=(0, 0, 0, 0))
+
+        self.sub_layout3.add_widget(self.upload)
+        self.card = MDCard(size_hint=(None, None), style='outlined',
+                           height="100dp", width="1500dp", radius=20, elevation=0, md_bg_color=get_color_from_hex('#00FFFFFF'))
+        self.sub_layout3.add_widget(self.card)
+        print(1)
+
+        print(2)
+
+        self.text = MDLabel(text="Heya my friend welcome to the nameless Music Player App. How can I help you today?", size_hint=(
+            1, 1), bold=True, font_style="H4", italic=True, valign='top', padding=[15, 0], height="100dp", halign='left', markup=True)
+        # self.text.add_widget(ImageLeftWidget(source='images/test.png'))
+        self.card.add_widget(self.text)
+
+        if len(self.text.text) > 178:
+            if '\n' in self.text.text:
+                count = self.text.text.count('\n')
+                self.card.height = f"{(len(self.text.text)/178)*110 * count/count-1.5}dp"
+            else:
+                self.card.height = f"{(len(self.text.text)/178)*110}dp"
+
+        self.text_input = MDTextField(
+            mode='fill', hint_text="Send a message", pos_hint={
+                'center_x': 0.5, 'top': 0.1}, size_hint=(None, None), size=(1700, 400), multiline=True, radius=(30, 30, 30, 30))  # fill_color_normal=[192, 192, 192, 0.5])
+        self.add_widget(self.text_input)
+        self.text_input.add_widget(ScrollView())
+        self.list.append(self.text_input.pos)
+
+        self.send_button = MDIconButton(icon='send', md_bg_color="blue", pos_hint={
+            'center_x': 0.93, 'top': 0.10})
+        self.send_button.bind(on_press=self.send_user_message)
+        self.add_widget(self.send_button)
+
+    def go_back(self, dt):
+        self.manager.current = 'main'
+
+    def send_user_message(self, dt):
+        self.counter += 1
+        self.text = self.text_input.text
+        self.text_input.text = ''
+        self.text_input.disabled = True
+        self.send_button.disabled = True
+
+        self.sub_layout4 = MDBoxLayout(
+            padding=[8, 3, 3, 2],
+            orientation='horizontal', size_hint=(None, None), adaptive_height=True, spacing="50px", width="1800dp"
+        )
+        self.sub_layout.add_widget(self.sub_layout4)
+        self.upload2 = Button(background_normal='images/no img.png',
+                              size_hint=(None, None), background_down='images/loading.png', valign='top', border=(0, 0, 0, 0), pos_hint={'top': 0.7})
+        self.sub_layout4.add_widget(self.upload2)
+
+        self.card2 = MDCard(size_hint=(None, None),
+                            height="100dp", width="1500dp", radius=20, elevation=0, md_bg_color=[0, 0, 0, 0], pos_hint={'top': 0.7})
+        self.sub_layout4.add_widget(self.card2)
+
+        self.text2 = MDLabel(text=self.text, size_hint=(
+            1, 1), bold=True, font_style="H4", halign='left', padding=[15, 3], italic=True, valign='top')
+        self.card2.add_widget(self.text2)
+        Clock.schedule_once(self.get_texture_size, 0)
+
+        if self.counter != 2:
+            self.scroll.scroll_to(widget=self.text2, animate={
+                                  'transition': 'in_out_sine'})
+
+        Thread(target=self.get_ai_message).start()
+
+    def get_texture_size(self, dt):
+        print(self.text2.padding)
+        self.card2.height = self.text2.texture_size[1] + \
+            2*self.text2.padding[1]
+
+    def move(self, dt):
+        Window.set_system_cursor(cursor_name='hand')
+
+    def leave(self, dt):
+        Window.set_system_cursor(cursor_name='arrow')
+
+    def get_ai_message(self):
+        try:
+            AIChatBot.counter = 1
+            self.ai_text = AIChatBot.output(text=self.text2.text).strip()
+            Clock.schedule_once(self.send_ai_message)
+        except:
+            self.ai_text = random.choice([
+                'Oops!!! There seems to be an unknown issue please try again.',
+                'Mhmm... Maybe somethings not going well. Try Again!',
+                'I dont know what happened there could you please tell me once more',
+                'I think im becoming deaf. Cant hear what you say'
+            ])
+            Clock.schedule_once(self.send_ai_message)
+
+    def send_ai_message(self, dt):
+
+        self.counter += 1
+        self.sub_layout5 = MDBoxLayout(
+            padding=[8, 3, 2, 3],
+            orientation='horizontal', size_hint=(None, None), adaptive_height=True, spacing="50px", width="1800dp"
+        )
+        self.sub_layout.add_widget(self.sub_layout5)
+
+        self.upload = Button(background_normal='images/ai.jpg',
+                             size_hint=(None, None), background_down='images/loading.png', valign='center', border=(0, 0, 0, 0), pos_hint={'top': 0.9})
+
+        self.sub_layout5.add_widget(self.upload)
+        self.card = MDCard(size_hint=(None, None), style='elevated',
+                           height="100dp", width="1500dp", radius=20, elevation=0, md_bg_color="#00FFFFFF", pos_hint={'top': 0.9})
+        self.sub_layout5.add_widget(self.card)
+
+        self.text = MDLabel(text=self.ai_text, size_hint=(
+            1, 1), bold=True, font_style="H4", italic=True, valign='top', padding=[15, 0], height="100dp", halign='left')
+        self.card.add_widget(self.text)
+
+        Clock.schedule_once(self.ai_texture_size, 0)
+
+        self.scroll.scroll_to(widget=self.text, animate={
+            'transition': 'in_out_sine'})
+
+        self.text_input.disabled = False
+        self.send_button.disabled = False
+
+        self.value = AIChatBot.output3()
+
+        if self.value[0] == True:
+            # self.sound = SoundLoader.load(f"music/{value[1]}.mp3")
+            # self.sound.play()
+            # self.manager.current = "box"
+            Clock.schedule_once(self.musicplayer)
+
+    def ai_texture_size(self, dt):
+        print(self.text.text_size)
+        if '\n' in self.text.text:
+            self.card.height = self.text.texture_size[1] + \
+                2*self.text.padding[1]
+        else:
+            if len(self.text.text) > 178:
+                self.card.height = f"{(len(self.text.text)/178)*110}dp"
+
+    def resize(self, window, width, height):
+        self.rect.size = Window.size
+
+    def Window_Size(self):
+        return Window.size
+
+    def musicplayer(self, dt):
+        self.manager.get_screen('musicplayer').new = True
+        self.manager.get_screen('musicplayer').prev_screen = 'chat'
+        self.manager.get_screen(
+            "musicplayer").song_name = self.value[1]
+        self.manager.get_screen("musicplayer").played_songs.append(
+            Database.get_song_detail(name=self.value[1]))
+        self.manager.get_screen("musicplayer").clicked = True
+        if self.manager.get_screen("musicplayer").sound and self.manager.get_screen("musicplayer").sn != self.value[1]:
+            self.manager.get_screen("musicplayer").sound.stop()
+        self.manager.current = 'musicplayer'
+
+
+class AIChatBot():
+    global agent_chain
+    global new_memory
+    global conversation
+    global memory_list
+    global memory
+    global screen_change
+    global song_name
+    global author
+    memory_list = []
+    counter = 0
+    screen_change = False
+    song_name = None
+    author = None
+
+    dburl = 'mysql+pymysql://root:@localhost/musicplayer'
+    db = SQLDatabase.from_uri(dburl)
+
+    search = SerpAPIWrapper()
+    tools = [
+        Tool(
+            name="Search",
+            func=search.run,
+            description="useful for when you need to answer questions about current events. You should ask targeted questions",
+        ),
+        Tool(
+            name="get song details",
+            func=lambda text: AIChatBot.sqloutput(text),
+            description="strictly use it when user wants to listen to a song. The Final Answer should be a message saying 'playing song'"
+        ),
+        WriteFileTool(),
+        ReadFileTool(),
+        MoveFileTool()
+    ]
+
+    prefix = "You are Aeris, A multifunctional chatbot that tends to user's queries"
+
+    memory = ConversationBufferMemory(
+        memory_key="chat_history")
+    llm = ChatOpenAI(temperature=0,
+                     model="gpt-3.5-turbo-0613", max_tokens=1000)
+    # )'''
+    agent_chain = initialize_agent(tools, llm, agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION, early_stopping_method='generate',
+                                   verbose=True, agent_kwargs={'prefix': prefix})  # , memory=memory)  # agent_kwargs={'prefix': prefix, 'suffix': suffix, 'input_variables': ['input', 'chat_history', 'agent_scratchpad']}, memory=memory)
+
+    def output(text):
+        output = agent_chain.run(input=text)
+        if output.startswith("egnahc_neercs:"):
+            output.remove("egnahc_neercs:")
+        print(screen_change)
+        print(output)
+
+        return output
+
+    def output3():
+        return (screen_change, song_name, author)
+
+    def output4(value: bool):
+        global screen_change
+        screen_change = value
+        print(screen_change)
+        return screen_change
+
+    def sqloutput(text):
+        db = SQLDatabase.from_uri(
+            'mysql+pymysql://root:@localhost/musicplayer', sample_rows_in_table_info=10)
+        llm = ChatOpenAI(temperature=0.1, model='gpt-3.5-turbo-0613')
+        agent = SQLDatabaseSequentialChain.from_llm(llm=llm,  # llm_chain=LLMChain(llm=HuggingFaceHub(repo_id='google/flan-t5-xl', model_kwargs={"temperature": 0, "max_length": 4096})),
+                                                    database=db, return_direct=True)
+        out = agent.run(text)
+        y = ast.literal_eval(out)
+        print(y)
+        if len(y) == 0 or len(y[0]) == 0:
+            return "Couldnt fetch the required song"
+        elif len(y[0]) == 7:
+            x = y[0][1]
+            AIChatBot.song_infos(y[0][1], y[0][2])
+        else:
+            x = y[0][0]
+            AIChatBot.song_infos(y[0][0], y[0][1])
+
+        return f"Song {x} being played successfully"
+
+    def song_infos(name_of_song: str, author_of_song: str):
+        global song_name
+        global author
+        global screen_change
+        song_name = name_of_song
+        author = author_of_song
+        screen_change = True
+
+
 class Settings(MDScreen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
 
+class VoiceAssistant():
+    def __init__(self):
+        self.recognizer = speech_recognition.Recognizer()
+        self.speaker = pyttsx3.init()
+        self.speaker.setProperty("rate", 150)
+
+        while True:
+            try:
+                print(0)
+                with speech_recognition.Microphone() as mic:
+                    self.recognizer.adjust_for_ambient_noise(mic, duration=0.2)
+
+                    audio = self.recognizer.listen(mic)
+                    text = self.recognizer.recognize_google(audio).lower()
+                    print(1, text)
+
+                    if "alexa" in text:
+                        audio2 = self.recognizer.listen(mic)
+                        text2 = self.recognizer.recognize_google(
+                            audio2).lower()
+                        print(2, text2)
+
+                        if text2 is not None:
+                            print(3, text2)
+                            self.speaker.say(text2)
+                            self.speaker.runAndWait()
+            except Exception as e:
+                print(e)
+                continue
+
+
 class spotify(MDApp):
     def build(self):
+
         Database.connect()
         self.icon = 'images/bheeshma parvam.jpg'
         self.title = "Music Player"
         self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_hue = "A100"
-        self.theme_cls.primary_palette = "Blue"
+        # self.theme_cls.primary_hue = '500'
+        # self.theme_cls.primary_palette = "Blue"
         sm = MDScreenManager()
         # sm.add_widget(Welcome(name='welcome'))
 
@@ -2328,7 +2964,12 @@ class spotify(MDApp):
         sm.add_widget(SearchScreen(name='search'))
         sm.add_widget(Playlist(name='playlist'))
         sm.add_widget(Playlist_Songs(name='playlist_songs'))
+        sm.add_widget(ChatUI(name='chat'))
+        # Thread(target=self.hello, name="Voice Assistant")
         return sm
+
+    def hello(self):
+        print("hello")
 
 
 if __name__ == '__main__':
