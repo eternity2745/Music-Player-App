@@ -229,7 +229,8 @@ class Database():
 
     def song_match(text):
         try:
-            cursor.execute(f"SELECT * FROM songs WHERE title LIKE '%{text}%'")
+            cursor.execute(
+                f"SELECT * FROM songs WHERE title LIKE '{text}%' OR author LIKE '%{text}%' OR image LIKE '%{text}%' OR language LIKE '%{text}%' OR genre LIKE '%{text}%' GROUP BY title LIMIT 20")
             result = cursor.fetchall()
             return result
         except:
@@ -386,7 +387,7 @@ class LoginScreen(MDScreen, MDFloatLayout):
                                  hint_text="Email", helper_text="Invalid Email", helper_text_mode='on_error', line_anim=True, size_hint=(0.8, 0.5), pos_hint={'center_x': 0.5, 'top': 1})
         self.password = MDTextField(hint_text="Password", password=True, mode='rectangle',
                                     helper_text="Invalid Password", helper_text_mode='on_error', line_anim=True, size_hint=(0.8, 0.5), pos_hint={'center_x': 0.5, 'top': 1}, icon_right='eye-off')
-        self.password.bind(on_icon_right=self.icon)
+        # self.password.bind(on_icon_right=self.icon)
 
         self.login_form.add_widget(self.email)
         self.login_form.add_widget(self.password)
@@ -535,11 +536,13 @@ class MainScreen(MDScreen):
         # self.songs = get_songs_from_database() # Function to get songs from database
         # for song in self.songs:
         # l = ['Jeevamshamayi', 'Chundari Penne', 'Kaliyuga', 'Nangeli Poove', 'Harivarasanam', 'Gulumaal', 'Etho Nidrathan', 'Paathiramazhayetho', 'Thee Minnal', 'Onnam Padimele']
-        songs = Database.music(limit=24)
+        songs = Database.music(limit=40)
         s1 = songs[:8]
         print(s1)
         s2 = songs[8:16]
-        s3 = songs[16:]
+        s3 = songs[16:24]
+        s4 = songs[24:32]
+        s5 = songs[32:]
         for i in s1:
             # songs = Database.music(limit=1)
             # print(songs)
@@ -583,33 +586,37 @@ class MainScreen(MDScreen):
                             on_enter=self.enter, on_leave=self.leave)
             self.english_section.add_widget(self.card3)
 
+        for z in s4:
+
             # songs = Database.music(limit=1)
             self.card4 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
                                 ripple_behavior=True, focus_behavior=True, elevation=0, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
-            self.card4.add_widget(Image(source=y[3]))
+            self.card4.add_widget(Image(source=z[3]))
             self.card4.add_widget(
-                MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
+                MDLabel(text=z[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
             self.card4.add_widget(
-                MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
+                MDLabel(text=z[2], size_hint=(1, 0.2), font_style='Subtitle2'))
             self.card4.bind(on_release=self.song,
                             on_enter=self.enter, on_leave=self.leave)
             self.hindi_section.add_widget(self.card4)
 
+        for q in s5:
+
             # songs = Database.music(limit=1)
             self.card5 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
                                 ripple_behavior=True, focus_behavior=True, elevation=0, focus_color=(31, 31, 31, 0.15))  # ,  unfocus_color = (40,40,40,0.1))
-            self.card5.add_widget(Image(source=y[3]))
+            self.card5.add_widget(Image(source=q[3]))
             self.card5.add_widget(
-                MDLabel(text=y[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
+                MDLabel(text=q[1], font_style='Subtitle1', bold=True, size_hint=(1, 0.2)))
             self.card5.add_widget(
-                MDLabel(text=y[2], size_hint=(1, 0.2), font_style='Subtitle2'))
+                MDLabel(text=q[2], size_hint=(1, 0.2), font_style='Subtitle2'))
             self.card5.bind(on_release=self.song,
                             on_enter=self.enter, on_leave=self.leave)
             self.tamil_section.add_widget(self.card5)
 
         self.layout = MDCard(size_hint=(1, 0.1), pos_hint={
             'center_x': 0.5, 'bottom': 1}, md_bg_color=(0, 0, 0, 1), elevation=3)
-        self.layout.bind(on_press=self.se)
+        # self.layout.bind(on_press=self.se)
         self.add_widget(self.layout)
         self.sub_layout1 = MDBoxLayout(size_hint_x=None, width=self.height)
         self.layout.add_widget(self.sub_layout1)
@@ -678,21 +685,22 @@ class MainScreen(MDScreen):
         self.sub_layout_3.add_widget(self.sub_layout_3_1)
 
         self.switch = MDIconButton(icon='music-accidental-double-flat', on_press=lambda x: Thread(
-            target=self.booster, name='Song Booster').start())
+            target=self.booster, name='Song Booster', daemon=True).start())
+        # self.switch.bind(on_press = lambda x: Thread(target ))
         self.sub_layout_3_1.add_widget(self.switch)
         self.repeat = MDIconButton(icon='repeat-off')
         self.sub_layout_3_1.add_widget(self.repeat)
         self.repeat.bind(on_release=self.song_repeat,
                          on_enter=self.enter, on_leave=self.leave)
         self.mute = MDIconButton(
-            icon='music-note', disabled=True, icon_color=[0, 0.5, 1, 1], theme_icon_color="Custom")
+            icon='volume-high', disabled=True, icon_color=[0, 0.5, 1, 1], theme_icon_color="Custom")
         self.mute.bind(on_press=self.mute_func,
                        on_enter=self.enter, on_leave=self.leave)
         self.sub_layout_3_1.add_widget(self.mute)
 
         self.top_bar = MDTopAppBar(left_action_items=[['menu', lambda x: self.nav_drawer.set_state('open'), "Menu"]],
                                    title="Music Player",
-                                   right_action_items=[['magnify', lambda x: self.search(), "Search"], ['microphone', lambda x: Thread(target=self.mic_ask()).start()]], pos_hint={'top': 1.0},
+                                   right_action_items=[['magnify', lambda x: self.search(), "Search"], ['microphone', lambda x: Thread(target=self.mic_ask(), name='vc_assistant').start()]], pos_hint={'top': 1.0},
                                    md_bg_color=[1, 0, 0, 0],
                                    anchor_title='left',
                                    elevation=0
@@ -779,8 +787,8 @@ class MainScreen(MDScreen):
                 ),
                 md_bg_color=(1, 0, 0, 0),
                 pos_hint={'top': 0.9},
-                # size_hint=(0.03, 10),
-                # spacing="1000dp"
+                # size_hint=(0.03, 3),
+                # spacing="30dp"
             )
         )
         self.add_widget(self.nav_layout)
@@ -819,9 +827,9 @@ class MainScreen(MDScreen):
         self.manager.get_screen('musicplayer').playlist_songs = None
         self.manager.get_screen('musicplayer').prev_screen = 'main'
         self.manager.get_screen("musicplayer").song_name = self.song_name
-        self.manager.get_screen("musicplayer").played_songs.append(
-            Database.get_song_detail(name=self.song_name))
-        # self.manager.get_screen("musicplayer").clicked = True
+        # self.manager.get_screen("musicplayer").played_songs.append(
+        #    Database.get_song_detail(name=self.song_name))
+        self.manager.get_screen("musicplayer").clicked = True
 
         if self.manager.get_screen("musicplayer").sound and self.manager.get_screen("musicplayer").sn != self.song_name:
             self.manager.get_screen("musicplayer").sound.stop()
@@ -846,14 +854,14 @@ class MainScreen(MDScreen):
         self.manager.get_screen("musicplayer").prev = True
         self.manager.get_screen("musicplayer").new = True
         self.manager.get_screen("musicplayer").index -= 1
-        if self.manager.get_screen("musicplayer").index == -(len(self.manager.get_screen("musicplayer").played_songs) - 1):
+        if self.manager.get_screen("musicplayer").index == -(len(self.manager.get_screen("musicplayer").played_songs)):
             self.manager.get_screen("musicplayer").prev_button.disabled = True
             self.skip_prev.disabled = True
         else:
             self.manager.get_screen("musicplayer").prev_button.disabled = False
             self.skip_prev.disabled = False
         song = self.manager.get_screen(
-            "musicplayer").played_songs[self.manager.get_screen("musicplayer").index]
+            "musicplayer").played_songs[self.manager.get_screen("musicplayer").index]  # self.played_songs[self.index]
 
         self.manager.get_screen("musicplayer").paused = False
         self.manager.get_screen("musicplayer").play_button.icon = 'play'
@@ -930,101 +938,6 @@ class MainScreen(MDScreen):
 
         if self.counter == 0:
             self.counter += 1
-            '''self.layout = MDCard(size_hint=(1, 0.1), pos_hint={
-                                 'center_x': 0.5, 'bottom': 1}, md_bg_color=(0, 0, 0, 1), elevation=3)
-            self.layout.bind(on_press=self.se)
-            self.add_widget(self.layout)
-            self.counter += 1
-            print(self.song_author)
-            print(self.sound)
-            print(self.song_image)
-            print(self.song_name)
-            print(type(self.song_name))
-            # self.layout = MDCard(size_hint = (1, 0.1), pos_hint = {'center_x': 0.5, 'bottom': 1}, md_bg_color = (0,0,0,1), elevation = 3)
-            # self.layout.bind(on_press = self.se)
-            # self.add_widget(self.layout)
-
-            self.sub_layout1 = MDBoxLayout(size_hint_x=None, width=self.height)
-            self.layout.add_widget(self.sub_layout1)
-
-            self.img = Image(source='images/black.jpg',
-                             pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint=(0.75, 0.75))
-            self.sub_layout1.add_widget(self.img)
-
-            self.sub_layout2 = MDBoxLayout(orientation='horizontal')
-            self.layout.add_widget(self.sub_layout2)
-
-            self.sub_layout2_1 = MDBoxLayout(
-                orientation='vertical', size_hint_x=0.2, spacing="0.5dp", padding="20dp")
-            self.sub_layout2.add_widget(self.sub_layout2_1)
-
-            self.song_n = MDLabel(text='', halign="left")
-            self.sub_layout2_1.add_widget(self.song_n)
-            self.song_auth = MDLabel(text='', halign="left")
-            self.sub_layout2_1.add_widget(self.song_auth)
-
-            self.sub_layout5 = MDBoxLayout(orientation='vertical', size_hint_x=0.8, spacing="1dp", padding="20dp", pos_hint={
-                                           'center_x': 0.5, 'center_y': 0.5})
-            self.sub_layout2.add_widget(self.sub_layout5)
-
-            self.sub_layout2_1_1 = MDBoxLayout(orientation='horizontal', spacing="5dp", pos_hint={
-                                               'center_x': 0.88, 'center_y': 0.3})
-            self.sub_layout5.add_widget(self.sub_layout2_1_1)
-
-            # self.sub_layout2_1_1.add_widget(MDLabel(text = "Song Name", halign = "left"))
-            self.skip_prev = MDIconButton(
-                icon='skip-previous', halign="center", disabled=True)
-            self.skip_prev.bind(
-                on_press=self.previous, on_breh=self.enter, on_leave=self.leave)
-            self.sub_layout2_1_1.add_widget(self.skip_prev)
-            self.play_pause = MDIconButton(icon='play', halign="center", icon_color=[
-                                           0, 0, 0, 1], theme_icon_color="Custom", md_bg_color="white", disabled=True)
-            self.sub_layout2_1_1.add_widget(self.play_pause)
-            self.skip_next = MDIconButton(
-                icon='skip-next', halign="center", disabled=True)
-            self.skip_next.bind(on_press=self.next,
-                                on_button_enter=self.enter, on_button_leave=self.leave)
-            self.sub_layout2_1_1.add_widget(self.skip_next)
-            # self.sub_layout2_1_1.add_widget(MDLabel(text = "Author Name", halign = "left"))
-
-            self.sub_layout5_2 = MDBoxLayout(
-                orientation='horizontal', spacing="0.1dp", size_hint_x=0.8, padding="5dp")
-            self.sub_layout5.add_widget(self.sub_layout5_2)
-
-            self.start = MDLabel(text="00:00", size_hint_x=0.2,
-                                 font_style="Subtitle2", halign="right")
-            self.sub_layout5_2.add_widget(self.start)
-            self.slider = MDSlider(
-                size_hint_x=0.7, hint=False)
-            # self.slider.set_thumb_icon(path='images/test.png')
-            self.sub_layout5_2.add_widget(self.slider)
-            self.end = MDLabel(text="00:00", size_hint_x=0.1,
-                               font_style="Subtitle2")
-            self.sub_layout5_2.add_widget(self.end)
-
-            self.sub_layout_3 = MDAnchorLayout(
-                anchor_x='center', anchor_y='center', size_hint=(0.2, 1))
-            self.sub_layout2.add_widget(self.sub_layout_3)
-
-            self.sub_layout_3_1 = MDBoxLayout(orientation='horizontal', size_hint=(
-                0.4, None), height=Window.minimum_height, spacing="3dp")
-            self.sub_layout_3.add_widget(self.sub_layout_3_1)
-
-            self.switch = MDIconButton(icon='music-accidental-double-flat', on_press=lambda x: Thread(
-                target=self.booster, name='Song Booster').start())
-            self.sub_layout_3_1.add_widget(self.switch)
-            self.repeat = MDIconButton(icon='repeat-off')
-            self.sub_layout_3_1.add_widget(self.repeat)
-            self.repeat.bind(on_release=self.song_repeat,
-                             on_enter=self.enter, on_leave=self.leave)
-            self.mute = MDIconButton(
-                icon='music-note', disabled=True, icon_color=[0, 0.5, 1, 1], theme_icon_color="Custom")
-            self.mute.bind(on_press=self.mute_func,
-                           on_enter=self.enter, on_leave=self.leave)
-            self.sub_layout_3_1.add_widget(self.mute)
-'''
-            # self.sub_layout.add_widget(MDLabel(text="Song Name\nAuthor Name", size_hint = (0.01,0.3), halign = 'left'))
-            # self.layout.add_widget(MDIconButton(icon="play", pos_hint = {'center_x': 0.5, 'center_y': 0.5, 'right':0.5}))
 
         elif self.counter > 0 and self.sound != None:
             self.mute.disabled = False
@@ -1129,17 +1042,30 @@ class MainScreen(MDScreen):
             toast(text="Loop disabled", duration=5)
 
     def mute_func(self, dt):
-        if self.sound and self.mute.icon == 'music-note':
-            self.mute.icon = 'music-note-off'
+        if self.sound and self.mute.icon == 'volume-high':
+            self.mute.icon = 'volume-variant-off'
             self.mute.theme_icon_color = "Primary"
+            # self.mute.icon_color = [0, 0.5, 1, 1]
             self.sound.volume = 0
             toast(text="Sound Muted", duration=5)
-        elif self.sound:
-            self.mute.icon = 'music-note'
+        elif self.sound and self.mute.icon == 'volume-variant-off':
+            self.mute.icon = 'volume-low'
+            self.mute.icon_color = [0, 0.5, 1, 1]
+            self.mute.theme_icon_color = "Custom"
+            self.sound.volume = 0.15
+            toast(text="Sound Enabled", duration=5)
+        elif self.sound and self.mute.icon == 'volume-low':
+            self.mute.icon = 'volume-medium'
+            self.mute.icon_color = [0, 0.5, 1, 1]
+            self.mute.theme_icon_color = "Custom"
+            self.sound.volume = 0.5
+            # toast(text="Sound Enabled", duration=5)
+        elif self.sound and self.mute.icon == 'volume-medium':
+            self.mute.icon = 'volume-high'
             self.mute.icon_color = [0, 0.5, 1, 1]
             self.mute.theme_icon_color = "Custom"
             self.sound.volume = 1
-            toast(text="Sound Enabled", duration=5)
+            # toast(text="Sound Enabled", duration=5)
 
     def check(self):
         print("Entered")
@@ -1150,8 +1076,8 @@ class MainScreen(MDScreen):
         self.recognizer = speech_recognition.Recognizer()
         self.speaker = pyttsx3.init()
         self.speaker.setProperty("rate", 150)
-        self.speaker.say("Hey what's up")
-        self.speaker.runAndWait()
+        # self.speaker.say("Hey what's up")
+        # self.speaker.runAndWait()
         try:
             print(0)
             with speech_recognition.Microphone() as mic:
@@ -1212,10 +1138,10 @@ class RegistrationScreen(MDScreen):
         if self.password.text == self.conf_pass.text:
             Database.create_account(
                 self.username.text, self.email.text, self.phone.text, self.password.text)
-            Cache.append(category='login_details',
-                         key='username', obj=self.email)
-            Cache.append(category='login_details',
-                         key='password', obj=self.password)
+            # Cache.append(category='login_details',
+            #             key='username', obj=self.email)
+            # Cache.append(category='login_details',
+            #             key='password', obj=self.password)
             self.manager.add_widget(MainScreen(name='main'))
             self.manager.current = 'main'
         else:
@@ -1280,7 +1206,7 @@ class MusicPlayer(MDScreen):
         self.prev = False
         self.stop = False
         self.next_song = []
-        self.previous_song = []
+        # self.previous_song = []
         self.playlist = False
         self.playlist_songs = None
         self.counter = 0
@@ -1300,18 +1226,20 @@ class MusicPlayer(MDScreen):
         self.played_songs = []
         self.index = -1
         self.sn = None
+        self.already_started = False
+        self.playlist_started = False
 
     def on_pre_enter(self, *args):
         self.song = Database.get_song_detail(name=self.song_name)
-        new = Database.music(limit=1)
+        '''new = Database.music(limit=1)  # [(''Parudeesa', 'author')]
         self.upcoming = new[0]
-        print(self.upcoming)
+        print(self.upcoming)'''
         if self.finished == True and self.counter == 0:
             self.manager.get_screen("main").skip_next.disabled = False
             self.manager.get_screen("main").play_pause.disabled = False
             self.clicked = False
             print(1)
-            self.previous_song.append(self.song)
+            # self.previous_song.append(self.song)
             self.stop = True
             self.counter += 1
             self.sn = self.song[1]
@@ -1373,7 +1301,6 @@ class MusicPlayer(MDScreen):
             Clock.schedule_interval(self.update_time, 1)
             self.finished = False
             self.paused = False
-            self.played_songs.append(self.song)
             # self.layout = MDAnchorLayout(anchor_x = "left", anchor_y = "bottom", md_bg_color = "red", size_hint = (0.1,0.1))
             # self.up = MDLabel(text = f"UPCOMING:\n{self.upcoming[1]}\n{self.upcoming[2]}")
             # self.layout.add_widget(self.up)
@@ -1382,7 +1309,9 @@ class MusicPlayer(MDScreen):
 
         if self.song[1] != self.sn and self.counter > 0:
             print(100)
+            self.prev_button.disabled = False
             self.screen_switched = False
+            self.already_started = True
             self.sn = self.song[1]
             self.new = True
             self.sound.stop()
@@ -1393,7 +1322,8 @@ class MusicPlayer(MDScreen):
 
             self.sound = SoundLoader.load(self.song[4])
             self.start_time.text = "00:00"
-            self.end_time.text = self.convert_seconds_to_min(self.sound.length)
+            self.end_time.text = self.convert_seconds_to_min(
+                sec=self.sound.length)
             self.sound.play()
             self.sound.bind(on_stop=self.on_stop)
             self.play_button.icon = (
@@ -1401,9 +1331,14 @@ class MusicPlayer(MDScreen):
             self.play_button.bind(on_press=self.play_pause)
             self.paused = False
             self.finished = False
+            if self.playlist_started == False:
+                self.played_songs.append(self.song)
+            self.playlist_started = False
+            # self.played_songs.append(self.song)
 
             Clock.schedule_interval(self.update_slider, 1)
             Clock.schedule_interval(self.update_time, 1)
+            self.clicked = False
 
         else:
             self.play_button.icon = (
@@ -1453,7 +1388,7 @@ class MusicPlayer(MDScreen):
         self.new = True
         self.index -= 1
         print("#######################", self.index, -(len(self.played_songs)))
-        if self.index == -(len(self.played_songs) - 1):
+        if self.index == -(len(self.played_songs)):
             print("OKKK")
             self.prev_button.disabled = True
         else:
@@ -1471,7 +1406,7 @@ class MusicPlayer(MDScreen):
         self.slider.value = 0
         Clock.unschedule(self.update_slider)
         Clock.unschedule(self.update_time)
-        print("On previous:", self.previous_song)
+        # print("On previous:", self.previous_song)
         # self.previous_song = Database.get_song_detail(name = self.sn)
         print(self.sn)
         self.sn = song[1]
@@ -1516,13 +1451,23 @@ class MusicPlayer(MDScreen):
             self.manager.get_screen("main").repeat.icon = 'repeat-off'
             self.manager.get_screen("main").repeat.theme_icon_color = "Primary"
 
-        print(self.paused, self.slider.value, self.prev, self.clicked)
-        print("self.new:", self.new, "", self.index)
-        if self.new == True and self.index != -1 and self.prev == False and self.paused == False:
+        print("PAUSED", self.paused)
+        print("SLIDER VALUE", self.slider.value)
+        print("PREV", self.prev)
+        print("CLICKED", self.clicked)
+        print("NEW", self.new)
+        print("INDEX", self.index)
+        print("ALREADY STARTED", self.already_started)
+        print(self.played_songs)
+        print("QUEUED SONGS", self.queue_songs)
+        print("PLAYLIST", self.playlist)
+        print("QUEUE", self.queue)
+
+        if self.index != -1 and self.prev == False and self.paused == False and self.playlist == False and self.queue == False and self.playlist_started == False:
+            print(
+                1000000000000000000000000000000000000000000000000000000000000000000000000000000)
             Clock.unschedule(self.update_slider)
             Clock.unschedule(self.update_time)
-            print(self.played_songs)
-            print(self.index)
             self.new = False
             self.index += 1
             song = self.played_songs[self.index]
@@ -1557,6 +1502,11 @@ class MusicPlayer(MDScreen):
             MainScreen.on_pre_enter
 
         elif self.paused == False and (self.slider.value > 98.5 or self.new == True) and self.prev == False and self.clicked == False:
+            # True and (False or True) and True and True
+            # True and True and True and True
+            # True
+            print(
+                1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111)
             self.clicked = False
             self.paused = False
             self.play_button.icon = 'play'
@@ -1566,11 +1516,36 @@ class MusicPlayer(MDScreen):
             Clock.unschedule(self.update_time)
             self.new = False
 
-            if self.queue != False:
+            if self.already_started != True:
+                print(1111111111111111111111111155555555555555555555555555)
+                song = Database.music(limit=1)
+                print("On stop:", song)
+                self.played_songs.append(
+                    Database.get_song_detail(name=song[0][1]))
+                self.sn = song[0][1]
+
+                self.bg_image.source = song[0][3]+'-bg.png'
+                self.song_title.text = song[0][1]
+                self.song_author.text = song[0][2]
+                self.song_image.source = song[0][3]
+
+                self.sound = SoundLoader.load(song[0][4])
+                self.start_time.text = "00:00"
+                self.end_time.text = self.convert_seconds_to_min(
+                    self.sound.length)
+                self.sound.play()
+                self.sound.bind(on_stop=self.on_stop)
+                self.play_button.icon = 'pause'
+                self.play_button.bind(on_press=self.play_pause)
+
+                Clock.schedule_interval(self.update_slider, 1)
+                Clock.schedule_interval(self.update_time, 1)
+
+            '''if self.queue != False:
+                print(
+                    1111111112222222222222222222222222222222222222222222222222222222222222222222)
                 if len(self.queue_songs) != 0:
                     self.played_songs.append(self.queue_songs[0])
-                    print(self.played_songs)
-                    print(self.queue_songs)
                     # if len(self.queue_songs) != 1:
                     #    self.previous_song = self.queue_songs[0]
                     self.sn = self.queue_songs[0][1]
@@ -1597,7 +1572,10 @@ class MusicPlayer(MDScreen):
                         self.queue = False
 
             elif self.playlist:
-                if self.playlist_songs != None and len(self.playlist_songs) != 0:
+                print(self.playlist_songs)
+                if self.playlist_songs != None and len(self.playlist_songs) != 0 and self.already_started == False:
+                    print(
+                        1111111111111111111333333333333333333333333333333333333333333333333)
                     # if len(self.playlist_songs) != 1:
                     self.played_songs.append(self.playlist_songs[0])
                     self.sn = self.playlist_songs[0][1]
@@ -1623,6 +1601,7 @@ class MusicPlayer(MDScreen):
                         self.playlist_songs = None
                         self.playlist = False
                 else:
+                    print(111111111111111111444444444444444444444444444444444)
                     song = Database.music(limit=1)
                     print("On stop:", song)
                     self.played_songs.append(
@@ -1644,34 +1623,7 @@ class MusicPlayer(MDScreen):
                     self.play_button.bind(on_press=self.play_pause)
 
                     Clock.schedule_interval(self.update_slider, 1)
-                    Clock.schedule_interval(self.update_time, 1)
-
-            else:
-                song = Database.music(limit=1)
-                print("On stop:", song)
-                self.played_songs.append(
-                    Database.get_song_detail(name=song[0][1]))
-                self.sn = song[0][1]
-
-                self.bg_image.source = song[0][3]+'-bg.png'
-                self.song_title.text = song[0][1]
-                self.song_author.text = song[0][2]
-                self.song_image.source = song[0][3]
-
-                self.sound = SoundLoader.load(song[0][4])
-                self.start_time.text = "00:00"
-                self.end_time.text = self.convert_seconds_to_min(
-                    self.sound.length)
-                self.sound.play()
-                self.sound.bind(on_stop=self.on_stop)
-                self.play_button.icon = 'pause'
-                self.play_button.bind(on_press=self.play_pause)
-
-                Clock.schedule_interval(self.update_slider, 1)
-                Clock.schedule_interval(self.update_time, 1)
-
-            if self.manager.get_screen("main").mute.icon == 'music-note-off':
-                self.sound.volume = 0
+                    Clock.schedule_interval(self.update_time, 1)'''
 
             self.manager.get_screen("main").sound = self.sound
             self.manager.get_screen("main").is_playing = self.paused
@@ -1690,10 +1642,18 @@ class MusicPlayer(MDScreen):
                 "main").end.text = self.convert_seconds_to_min(self.sound.length)
             MainScreen.on_pre_enter
 
-            # notification.notify(app_icon = None, title = self.song_title.text, app_name = "Music Player",
-            #                    message = self.song_author.text, timeout = 10, toast = False)
-
             self.stop = True
+        self.already_started = False
+
+        if self.manager.get_screen('main').sound != None:
+            vol = {'volume-high': 1, 'volume-variant-off': 0,
+                   'volume-low': 0.15, 'volume-medium': 0.5}
+            self.m_icon = self.manager.get_screen(
+                'main').mute.icon  # volume-variant-off
+            self.manager.get_screen('main').sound.volume = vol[self.m_icon]
+
+        # notification.notify(app_icon = None, title = self.song_title.text, app_name = "Music Player",
+        #                    message = self.song_author.text, timeout = 10, toast = False)
 
         # elif self.new == True:
         #    self.new = False
@@ -1705,7 +1665,7 @@ class MusicPlayer(MDScreen):
     def update_time(self, dt):
         total_seconds = int(self.sound.get_pos())
         current_minute = total_seconds // 60
-        current_seconds = total_seconds - current_minute * 60
+        current_seconds = total_seconds - (current_minute * 60)
         current_time = f"{current_minute:02}:{current_seconds:02}"
         self.start_time.text = current_time
 
@@ -1719,7 +1679,7 @@ class MusicPlayer(MDScreen):
         self.manager.get_screen("main").song_name = self.song_title.text
         self.manager.get_screen("main").song_author = self.song_author.text
         self.manager.get_screen("main").song_image = self.song_image.source
-        self.manager.current = self.prev_screen
+        self.manager.current = self.prev_screen  # 'main'
 
 
 class BassBoost():
@@ -1756,6 +1716,8 @@ class SearchScreen(MDScreen):
         super().__init__(**kwargs)
         self.song_id = None
 
+        self.new_songs = Clock.create_trigger(self.new)  # self.new_songs()
+
         self.songs = Database.music(limit=27)
 
         self.back = MDIconButton(
@@ -1768,8 +1730,8 @@ class SearchScreen(MDScreen):
                                       background_color="yellow", fill_color_focus="white", fill_color_normal="grey",
                                       hint_text_color_normal="white", icon_left_color_normal="white", text_validate_unfocus=False)
         self.add_widget(self.search_bar)
-        self.search_bar.bind(text=self.update_list)
-        self.search_bar.bind(on_text_validate=self.update_suggestion)
+        self.search_bar.bind(text=self.updating)
+        # self.search_bar.bind(on_text_validate=self.update_suggestion)
 
         self.scroll = MDScrollView(pos_hint={'top': 0.9}, do_scroll_x=False, scroll_wheel_distance=5, scroll_type=['bars', 'content'], smooth_scroll_end=20,
                                    always_overscroll=False, bar_margin=0.5, bar_width=7, bar_inactive_color=[0, 0, 0, 0])
@@ -1788,28 +1750,68 @@ class SearchScreen(MDScreen):
 
         # self.list.add_widget(MDLabel(text='gaga\ngagaga\ngagagag\nagagagagaga', size_hint = (2,2)))
 
-    def update_list(self, instance, value):
-        text = self.search_bar.text
-        self.list.clear_widgets()
+    def on_pre_enter(self):
+        self.account = Database.acc_details()[0]
+        self.plays = Database.playlists_info(username=self.account)
+        print(self.plays)
 
-        filtered_items = Database.song_match(text)
+    def updating(self, instance, value):
+        print('ho')
+        self.search_text = self.search_bar.text
+        Thread(target=self.update_list, name='search', daemon=True).start()
 
-        if len(filtered_items) > 0:
-            for it in filtered_items:
-                self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(
-                    id=f"{it[0]},{it[1]}", icon='dots-vertical', on_press=self.dropdown), ImageLeftWidget(source=it[3]), text=it[1], secondary_text=it[2])
-                self.list.add_widget(self.sugg_songs)
-                self.sugg_songs.bind(on_release=self.musicplayer)
+    def update_list(self):
+        print("Entering update list")
+        print(self.search_text)
 
-        if len(filtered_items) > 0 and len(self.search_bar.text) > 0:
-            self.search_bar.hint_text = filtered_items[0][1]
-        if len(self.search_bar.text) == 0:
-            self.search_bar.hint_text = "Search"
+        if self.search_text != '':
+            # t1 = time.time()
+            print(1111111111)
+            text = self.search_text
+            # print(time.time()-t1)
+            print(66666)
 
-    def update_suggestion(self, instance):
+            self.filtered_items = Database.song_match(text)
+            print(9999999999999)
+            # print(time.time()-t1)
+            self.new_songs()
+
+            '''if len(self.filtered_items) > 0:
+                for it in self.filtered_items:
+                    self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(
+                        id=f"{it[0]},{it[1]}", icon='dots-vertical', on_press=self.dropdown), ImageLeftWidget(source=it[3]), text=it[1], secondary_text=it[2])
+                    self.list.add_widget(self.sugg_songs)
+                    self.sugg_songs.bind(on_release=self.musicplayer)
+            print(891243)'''
+        else:
+            self.filtered_items = []
+            self.new_songs()
+
+        # if len(filtered_items) > 0 and len(self.search_bar.text) > 0:
+        #    self.search_bar.hint_text = filtered_items[0][1]
+        # if len(self.search_bar.text) == 0:
+        #    self.search_bar.hint_text = "Search"
+
+    def new(self, dt):
+        # print(len(self.filtered_items))
+        try:
+            if len(self.filtered_items) > 0:
+                self.list.clear_widgets()
+                for it in self.filtered_items:
+                    self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(
+                        id=f"{it[0]},{it[1]}", icon='dots-vertical', on_press=self.dropdown), ImageLeftWidget(source=it[3]), text=it[1], secondary_text=it[2])
+                    self.list.add_widget(self.sugg_songs)
+                    self.sugg_songs.bind(on_release=self.musicplayer)
+            else:
+                print("Clearing")
+                self.list.clear_widgets()
+        except:
+            self.list.clear_widgets()
+
+    '''def update_suggestion(self, instance):
         if len(self.search_bar.text) != 0 and self.search_bar.hint_text != "Search":
             self.search_bar.text = self.search_bar.hint_text
-            self.search_bar.hint_text = "Search"
+            self.search_bar.hint_text = "Search"'''
 
     def go_back(self, dt):
         self.manager.current = 'main'
@@ -1821,9 +1823,7 @@ class SearchScreen(MDScreen):
         self.manager.get_screen('musicplayer').playlist = False
         self.manager.get_screen('musicplayer').playlist_songs = None
         self.manager.get_screen('musicplayer').prev_screen = 'search'
-        self.manager.get_screen("musicplayer").played_songs.append(
-            Database.get_song_detail(name=self.song_name))
-        self.manager.get_screen("musicplayer").clicked = True
+        self.manager.get_screen("musicplayer").clicked = False
         self.manager.get_screen('musicplayer').new = True
 
         if self.manager.get_screen("musicplayer").sound and self.manager.get_screen("musicplayer").sn != self.song_name:
@@ -1888,11 +1888,6 @@ class SearchScreen(MDScreen):
             instance.id), song_id=int(self.song_id), song_name=self.name_of_song)
         self.dialog.dismiss()
         toast(text="Song Added To Playlist")
-
-    def on_pre_enter(self):
-        self.account = Database.acc_details()[0]
-        self.plays = Database.playlists_info(username=self.account)
-        print(self.plays)
 
 
 class Playlist(MDScreen):
@@ -1963,6 +1958,7 @@ class Playlist(MDScreen):
                     self.upload.background_normal if self.upload.background_normal != 'images/upload.png' else 'images/no img.png'),
                 user=self.username, date=t
             )
+
             self.playlists = Database.playlists_info(username=self.username)
 
             self.card_new = MDCard(id=str(self.playlists[-1][0]), orientation='vertical', md_bg_color=(
@@ -1979,7 +1975,7 @@ class Playlist(MDScreen):
             self.card_new.add_widget(self.play_name_new)
 
             self.play_date_new = MDLabel(
-                text=self.playlists[-1][3], font_style="Subtitle2", size_hint_y=0.1)
+                text=self.playlists[-1][4], font_style="Subtitle2", size_hint_y=0.1)
             self.card_new.add_widget(self.play_date_new)
             print(self.play_name_new.text, self.img_new.source,
                   self.username, self.play_date_new.text)
@@ -1993,10 +1989,10 @@ class Playlist(MDScreen):
         self.username = self.account[0]
         self.playlists = Database.playlists_info(username=self.username)
         print(self.playlists)
-        self.prev_len = len(self.playlists)
+        self.prev_len = len(self.playlists)  # 3
         print(self.deleted)
 
-        if self.counter == 0 or self.deleted == True:
+        if self.counter == 0 or self.deleted == True:  # True or False -> True
             print("OKAKAKAKAKAAAAAA", self.deleted)
             self.counter += 1
             if self.deleted:
@@ -2022,6 +2018,7 @@ class Playlist(MDScreen):
                 self.card = MDCard(id=str(self.playlists[i][0]), orientation='vertical', md_bg_color=(
                     1, 1, 1, 1), height="350dp", width="300dp", size_hint=(None, None), spacing="10dp", padding="20dp")
                 self.sub_layout.add_widget(self.card)
+                # print(self.card.id)
                 self.card.bind(on_press=self.playlist_songs)
 
                 self.img = Image(source=self.playlists[i][2], pos_hint={
@@ -2144,16 +2141,16 @@ class Playlist_Songs(MDScreen):
         self.clear_widgets()
         self.songs = Database.playlist_songs(
             id=self.playlist_id, order_by="created")
-        print(self.songs)
 
         self.song_infos = []
         for i in self.songs:
             self.song_info = Database.get_song_detail(id=i[1])
-            print(self.song_info)
             self.song_infos.append(self.song_info)
-        print(self.song_infos)
 
         self.hex = self.colour_extractor(self.bg_img)
+
+        '''x = add(1,2)
+        print(x)'''
 
         with self.canvas:
             Color(0.5, 0.5, 0.5,
@@ -2252,19 +2249,32 @@ class Playlist_Songs(MDScreen):
 
     def musicplayer(self, instance):
         self.index = int(instance.children[6].text)
-        self.manager.get_screen('musicplayer').playlist = True
+        self.manager.get_screen('musicplayer').playlist = False  # True
+        print("PLAYLIST INDEX", self.index)
+        print("PLAYLIST SONGS:", self.song_infos)
+        self.new_index = self.manager.get_screen('musicplayer').index
+
         try:
             self.manager.get_screen(
                 'musicplayer').playlist_songs = self.song_infos[self.index::]
+            for i in self.song_infos:
+                self.manager.get_screen(
+                    'musicplayer').played_songs.insert(self.new_index+1, i)
+            self.new_index = 0
+            try:
+                self.manager.get_screen('musicplayer').index = -(self.manager.get_screen(
+                    'musicplayer').played_songs.index(self.song_infos[self.index]))
+            except:
+                self.manager.get_screen('musicplayer').index = -(self.manager.get_screen(
+                    'musicplayer').played_songs.index(self.song_infos[-1]))
+            self.manager.get_screen('musicplayer').playlist_started = True
         except:
             self.manager.get_screen('musicplayer').playlist_songs = None
         self.manager.get_screen('musicplayer').new = True
         self.manager.get_screen('musicplayer').prev_screen = 'playlist_songs'
         self.manager.get_screen(
             "musicplayer").song_name = instance.children[4].text
-        self.manager.get_screen("musicplayer").played_songs.append(
-            Database.get_song_detail(name=instance.children[4].text))
-        self.manager.get_screen("musicplayer").clicked = True
+        self.manager.get_screen("musicplayer").clicked = False
         if self.manager.get_screen("musicplayer").sound and self.manager.get_screen("musicplayer").sn != self.song_name:
             self.manager.get_screen("musicplayer").sound.stop()
         self.manager.current = 'musicplayer'
@@ -2275,7 +2285,6 @@ class Playlist_Songs(MDScreen):
     def colour_extractor(self, path):
         color_thief = ColorThief(path)
         palette = color_thief.get_palette(color_count=2)
-        print(palette)
         l = []
 
         for i in palette:
@@ -2387,14 +2396,12 @@ class Playlist_Songs(MDScreen):
         Database.delete_playlist_song(self.playlist_id, int(instance.id))
         self.layout2.clear_widgets()
         self.songs = Database.playlist_songs(id=self.playlist_id)
-        print(self.songs)
 
         self.song_infos = []
         for i in self.songs:
             self.song_info = Database.get_song_detail(id=i[1])
             print(self.song_info)
             self.song_infos.append(self.song_info)
-        print(self.song_infos)
 
         self.number = MDLabel(text='')
 
@@ -2724,7 +2731,8 @@ class ChatUI(MDScreen):
             self.scroll.scroll_to(widget=self.text2, animate={
                                   'transition': 'in_out_sine'})
 
-        Thread(target=self.get_ai_message).start()
+        Thread(target=self.get_ai_message,
+               name='AI_Message', daemon=True).start()
 
     def get_texture_size(self, dt):
         print(self.text2.padding)
@@ -2808,8 +2816,6 @@ class ChatUI(MDScreen):
         self.manager.get_screen('musicplayer').prev_screen = 'chat'
         self.manager.get_screen(
             "musicplayer").song_name = self.value[1]
-        self.manager.get_screen("musicplayer").played_songs.append(
-            Database.get_song_detail(name=self.value[1]))
         self.manager.get_screen("musicplayer").clicked = True
         if self.manager.get_screen("musicplayer").sound and self.manager.get_screen("musicplayer").sn != self.value[1]:
             self.manager.get_screen("musicplayer").sound.stop()
@@ -2859,9 +2865,11 @@ class AIChatBot():
                      model="gpt-3.5-turbo-0613", max_tokens=1000)
     # )'''
     agent_chain = initialize_agent(tools, llm, agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION, early_stopping_method='generate',
-                                   verbose=True, agent_kwargs={'prefix': prefix})  # , memory=memory)  # agent_kwargs={'prefix': prefix, 'suffix': suffix, 'input_variables': ['input', 'chat_history', 'agent_scratchpad']}, memory=memory)
+                                   verbose=True, agent_kwargs={'prefix': prefix}, max_iterations=5)  # , memory=memory)  # agent_kwargs={'prefix': prefix, 'suffix': suffix, 'input_variables': ['input', 'chat_history', 'agent_scratchpad']}, memory=memory)
 
     def output(text):
+        global screen_change
+        screen_change = False
         output = agent_chain.run(input=text)
         if output.startswith("egnahc_neercs:"):
             output.remove("egnahc_neercs:")
