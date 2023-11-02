@@ -1,0 +1,2 @@
+MySQL 5.5.41 Command Line Client
+Python 3.10.0

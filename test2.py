@@ -1,106 +1,79 @@
-from kivy.metrics import dp
-from kivy.uix.anchorlayout import AnchorLayout
-
 from kivymd.app import MDApp
-from kivymd.uix.datatables import MDDataTable
+
+from kivy.lang.builder import Builder
+from kivy.factory import Factory
+
+Factory.register(
+    "MDTitleBar",
+    module="kivymd_extensions.title_bar.title_bar",
+)
+
+KV = """
+MDScreen:
+    MDTitleBar:
+        id: title_bar
+        name: Mee
+
+    MDTopAppBar:
+        id: toolbar
+        title: "MDTopAppBar"
+        size_hint_y: None
+        y: title_bar.y - self.height
+    
+    ScrollView:
+        id: scroll_view
+        size_hint: (None, None)
+        size: (root.width, root.height - title_bar.height - toolbar.height - dp(10))
+        always_overscroll: False
+        
+        MDBoxLayout:
+            orientation: 'vertical'
+            adaptive_height: True
+            padding: dp(0), max(scroll_view.height / 2 - primary_color_btn.height - dp(5), dp(0)), dp(0), dp(0)
+            spacing: dp(10)
+            
+            MDRaisedButton:
+                id: primary_color_btn
+                text: "Update primary color"
+                pos_hint: {"center_x": .5}
+                on_release: app.update_color()
+        
+            MDRaisedButton:
+                text: "Update theme"
+                pos_hint: {"center_x": .5}
+                on_release: app.change_theme()
+"""
+
+colors = ['Red', 'Pink', 'Purple', 'DeepPurple', 'Indigo', 'Blue', 'LightBlue', 'Cyan', 'Teal', 'Green', 'LightGreen',
+          'Lime', 'Yellow', 'Amber', 'Orange', 'DeepOrange', 'Brown', 'Gray', 'BlueGray']
 
 
-class Example(MDApp):
+class CustomTitleBar(MDApp):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.colors = colors.copy()
+        self.screen = Builder.load_string(KV)
+
+        self.title = "My App"
+        self.icon = 'images/ai.jpg'
+
     def build(self):
-        self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Orange"
+        return self.screen
 
-        layout = AnchorLayout()
-        data_tables = MDDataTable(
-            size_hint=(0.9, 0.6),
-            column_data=[
-                ("Column 1", dp(20)),
-                ("Column 2", dp(30)),
-                ("Column 3", dp(50), self.sort_on_col_3),
-                ("Column 4", dp(30)),
-                ("Column 5", dp(30)),
-                ("Column 6", dp(30)),
-                ("Column 7", dp(30), self.sort_on_col_2),
-            ],
-            row_data=[
-                # The number of elements must match the length
-                # of the `column_data` list.
-                (
-                    "1",
-                    ("alert", [255 / 256, 165 / 256, 0, 1], "No Signal"),
-                    "Astrid: NE shared managed",
-                    "Medium",
-                    "Triaged",
-                    "0:33",
-                    "Chase Nguyen",
-                ),
-                (
-                    "2",
-                    ("alert-circle", [1, 0, 0, 1], "Offline"),
-                    "Cosmo: prod shared ares",
-                    "Huge",
-                    "Triaged",
-                    "0:39",
-                    "Brie Furman",
-                ),
-                (
-                    "3",
-                    (
-                        "checkbox-marked-circle",
-                        [39 / 256, 174 / 256, 96 / 256, 1],
-                        "Online",
-                    ),
-                    "Phoenix: prod shared lyra-lists",
-                    "Minor",
-                    "Not Triaged",
-                    "3:12",
-                    "Jeremy lake",
-                ),
-                (
-                    "4",
-                    (
-                        "checkbox-marked-circle",
-                        [39 / 256, 174 / 256, 96 / 256, 1],
-                        "Online",
-                    ),
-                    "Sirius: NW prod shared locations",
-                    "Negligible",
-                    "Triaged",
-                    "13:18",
-                    "Angelica Howards",
-                ),
-                (
-                    "5",
-                    (
-                        "checkbox-marked-circle",
-                        [39 / 256, 174 / 256, 96 / 256, 1],
-                        "Online",
-                    ),
-                    "Sirius: prod independent account",
-                    "Negligible",
-                    "Triaged",
-                    "22:06",
-                    "Diane Okuma",
-                ),
-            ],
-        )
-        layout.add_widget(data_tables)
-        return layout
+    def update_color(self):
+        self.colors.remove(self.theme_cls.primary_palette)
 
-    def sort_on_col_3(self, data):
-        return zip(
-            *sorted(
-                enumerate(data),
-                key=lambda l: l[1][3]
-            )
-        )
+        if not self.colors:
+            self.colors = colors.copy()
 
-    def sort_on_col_2(self, data):
-        return zip(
-            *sorted(
-                enumerate(data),
-                key=lambda l: l[1][-1]
-            )
-        )
+        self.theme_cls.primary_palette = self.colors[0]
 
-Example().run()
+    def change_theme(self):
+        if self.theme_cls.theme_style == 'Dark':
+            self.theme_cls.theme_style = 'Light'
+        else:
+            self.theme_cls.theme_style = 'Dark'
+
+
+if __name__ == "__main__":
+    CustomTitleBar().run()
