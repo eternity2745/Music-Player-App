@@ -2881,7 +2881,8 @@ class Playlist_Songs(MDScreen):
     def to_player(self, instance):
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
-            self.manager.get_screen('musicplayer').prev_screen = 'search'
+            self.manager.get_screen(
+                'musicplayer').prev_screen = 'playlist_songs'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
             self.manager.transition.direction = 'left'
@@ -3739,7 +3740,7 @@ class UserProfile(MDScreen):
     def to_player(self, instance):
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
-            self.manager.get_screen('musicplayer').prev_screen = 'search'
+            self.manager.get_screen('musicplayer').prev_screen = 'profile'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
             self.manager.transition.direction = 'left'
@@ -4006,7 +4007,7 @@ class Settings(MDScreen):
     def to_player(self, instance):
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
-            self.manager.get_screen('musicplayer').prev_screen = 'search'
+            self.manager.get_screen('musicplayer').prev_screen = 'settings'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
             self.manager.transition.direction = 'left'
