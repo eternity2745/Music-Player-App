@@ -193,9 +193,10 @@ class Database():
         )
         cursor = cnx.cursor()
 
-    def create_account(username, email, phone, password):
-        cursor.execute('INSERT INTO users (username, email, phone, password) VALUES (%s, %s, %s, %s)',
-                       (username, email, phone, password))
+    def create_account(username, email, phone, password, image):
+        id = int(str((random.random())).split('.')[1])
+        cursor.execute('INSERT INTO users (id, username, email, phone, password, image) VALUES (%s, %s, %s, %s, %s, %s)',
+                       (id, username, email, phone, password))
         cnx.commit()
         global account
         global logged_in
@@ -1245,24 +1246,27 @@ class RegistrationScreen(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.go_back = MDAnchorLayout(anchor_x="left", anchor_y="top")
-
-        self.back_button = MDRaisedButton(text="Back")
+        self.back_button = MDIconButton(
+            icon='arrow-left', pos_hint={'top': 1, 'left': 1})
         self.back_button.bind(on_release=lambda x: self.back())
-        self.go_back.add_widget(self.back_button)
+        self.add_widget(self.back_button)
 
-        self.add_widget(self.go_back)
+        self.registration_form = MDCard(orientation='vertical', size_hint=(
+            0.35, 0.55), pos_hint={'center_x': 0.5, 'center_y': 0.5}, spacing="12dp", padding=[20, 30, 20, 30])
 
-        self.registration_form = MDBoxLayout(orientation='vertical', size_hint=(
-            0.5, 0.5), pos_hint={'center_x': 0.5, 'center_y': 0.5})
-
-        self.username = MDTextField(hint_text="Username")
-        self.email = MDTextField(hint_text='Email')
-        self.phone = MDTextField(hint_text='Phone')
+        self.text = MDLabel(text="[font=cracky]Registration[/font]",
+                            halign='center', font_style="H1", bold=True, font_family="fonts/CurlzMT.ttf", markup=True)
+        self.username = MDTextField(
+            hint_text="Username", mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='account')
+        self.email = MDTextField(
+            hint_text='Email', mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='email')
+        self.phone = MDTextField(
+            hint_text='Phone', mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='phone')
         self.password = MDTextField(hint_text='Password', password=True,
-                                    helper_text="Passwords doesnt match", helper_text_mode="on_error")
+                                    helper_text="Passwords doesnt match", helper_text_mode="on_error", mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='key')
         self.conf_pass = MDTextField(hint_text='Confirm Password', password=True,
-                                     helper_text="Passwords doesnt match", helper_text_mode="on_error")
+                                     helper_text="Passwords doesnt match", helper_text_mode="on_error", mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='key')
+        self.registration_form.add_widget(self.text)
         self.registration_form.add_widget(self.username)
         self.registration_form.add_widget(self.email)
         self.registration_form.add_widget(self.phone)
@@ -1271,7 +1275,7 @@ class RegistrationScreen(MDScreen):
 
         # Create a register button
         self.register_button = MDRectangleFlatButton(
-            text='Register', pos_hint={'center_x': 0.5})
+            text='Create Account', pos_hint={'center_x': 0.5})
         self.register_button.bind(on_release=self.register)
         self.registration_form.add_widget(self.register_button)
 
@@ -1285,7 +1289,7 @@ class RegistrationScreen(MDScreen):
     def register(self, dt):
         if self.password.text == self.conf_pass.text:
             Database.create_account(
-                self.username.text, self.email.text, self.phone.text, self.password.text)
+                self.username.text, self.email.text, self.phone.text, self.password.text, 'images/account.png')
             # Cache.append(category='login_details',
             #             key='username', obj=self.email)
             # Cache.append(category='login_details',
@@ -2434,7 +2438,7 @@ class Playlist(MDScreen):
     def to_player(self, instance):
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
-            self.manager.get_screen('musicplayer').prev_screen = 'search'
+            self.manager.get_screen('musicplayer').prev_screen = 'playlist'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
             self.manager.transition.direction = 'left'

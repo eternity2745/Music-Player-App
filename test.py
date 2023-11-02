@@ -1,3 +1,4 @@
+from kivy.core.text import LabelBase
 from kivy.factory import Factory
 from kivy.lang import Builder
 from infi.systray import SysTrayIcon
@@ -292,11 +293,47 @@ class testing3(MDScreen):
         print("hey")
 
 
-class user_profile(MDScreen):
+class reg_screen(MDScreen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        LabelBase.register(
+            name='cracky', fn_regular='fonts/CurlzMT.ttf', fn_bold='fonts/CURLZ.ttf')
 
-        # elf.sub_layout3.add_widget(self.card)'''
+        self.back_button = MDIconButton(
+            icon='arrow-left', pos_hint={'top': 1, 'left': 1})
+        self.back_button.bind(on_release=lambda x: self.back())
+        self.add_widget(self.back_button)
+
+        self.registration_form = MDCard(orientation='vertical', size_hint=(
+            0.35, 0.55), pos_hint={'center_x': 0.5, 'center_y': 0.5}, spacing="12dp", padding=[20, 30, 20, 30])
+
+        self.text = MDLabel(text="[font=cracky]Registration[/font]",
+                            halign='center', font_style="H1", bold=True, font_family="fonts/CurlzMT.ttf", markup=True)
+        self.username = MDTextField(
+            hint_text="Username", mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='account')
+        self.email = MDTextField(
+            hint_text='Email', mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='email')
+        self.phone = MDTextField(
+            hint_text='Phone', mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='phone')
+        self.password = MDTextField(hint_text='Password', password=True,
+                                    helper_text="Passwords doesnt match", helper_text_mode="on_error", mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='key')
+        self.conf_pass = MDTextField(hint_text='Confirm Password', password=True,
+                                     helper_text="Passwords doesnt match", helper_text_mode="on_error", mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='key')
+        self.registration_form.add_widget(self.text)
+        self.registration_form.add_widget(self.username)
+        self.registration_form.add_widget(self.email)
+        self.registration_form.add_widget(self.phone)
+        self.registration_form.add_widget(self.password)
+        self.registration_form.add_widget(self.conf_pass)
+
+        # Create a register button
+        self.register_button = MDRectangleFlatButton(
+            text='Create Account', pos_hint={'center_x': 0.5})
+        # self.register_button.bind(on_release=self.register)
+        self.registration_form.add_widget(self.register_button)
+
+        # Add the registration form to the screen
+        self.add_widget(self.registration_form)
 
 
 class testing(MDScreen):
@@ -705,7 +742,7 @@ class MainApp(MDApp):
         self.sm = MDScreenManager()
         # sm.add_widget(testing(name='testing'))
         # sm.add_widget(testing2(name='back'))
-        self.sm.add_widget(testing4(name='user'))
+        self.sm.add_widget(reg_screen(name='user'))
         return self.sm
 
     def stopping_method(self):
