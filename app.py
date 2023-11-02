@@ -414,6 +414,7 @@ class WelcomeScreen(MDScreen):
         # self.video.state = 'stop'
 
         self.manager.current = 'login'
+        self.manager.transition.direction = 'left'
 
 
 class LoginScreen(MDScreen, MDFloatLayout):
@@ -506,6 +507,7 @@ class LoginScreen(MDScreen, MDFloatLayout):
 
     def reg(self):
         self.manager.current = 'registration'
+        self.manager.transition.direction = 'left'
 
 
 os.environ['OPENAI_API_KEY'] = "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"
@@ -604,7 +606,7 @@ class MainScreen(MDScreen):
         s1 = Database.music(limit=8)
         s2 = Database.music(limit=8, lang='malayalam')
         s3 = Database.music(limit=8, lang='english')
-        s4 = list(s1)
+        s4 = Database.music(limit=8, lang='hindi')
         s5 = list(s1)
         for i in s1:
             # songs = Database.music(limit=1)
@@ -862,9 +864,11 @@ class MainScreen(MDScreen):
 
     def go_to_lyrics(self, dt):
         self.manager.current = 'lyrics'
+        self.manager.transition.direction = 'up'
 
     def to_main(self, dt):
         self.manager.current = 'main'
+        self.manager.transition.direction = 'left'
 
     def to_player(self, instance):
         try:
@@ -872,12 +876,14 @@ class MainScreen(MDScreen):
             self.manager.get_screen('musicplayer').prev_screen = 'main'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
+            self.manager.transition.direction = 'left'
         except:
             pass
 
     def to_chat(self, dt):
         self.nav_drawer.set_state("close")
         self.manager.current = 'chat'
+        self.manager.transition.direction = 'left'
 
     def enter(self, instance):
         Window.set_system_cursor(cursor_name='hand')
@@ -893,14 +899,17 @@ class MainScreen(MDScreen):
     def logout(self, dt):
         self.manager.remove_widget(MainScreen(name='main'))
         self.manager.current = 'login'
+        self.manager.transition.direction = 'left'
 
     def to_textart(self, dt):
         self.nav_drawer.set_state('close')
         self.manager.current = 'aiart'
+        self.manager.transition.direction = 'left'
 
     def to_playlist(self, dt):
         self.nav_drawer.set_state('close')
         self.manager.current = 'playlist'
+        self.manager.transition.direction = 'left'
 
     def song(self, instance):
         self.song_name = instance.children[1].text
@@ -920,6 +929,7 @@ class MainScreen(MDScreen):
             # print("yes")
             # self.manager.get_screen("musicplayer").play_button.icon == self.play_pause.icon
         self.manager.current = 'musicplayer'
+        self.manager.transition.direction = 'left'
 
     def next(self, dt):
         self.manager.get_screen("musicplayer").prev_button.disabled = False
@@ -996,6 +1006,7 @@ class MainScreen(MDScreen):
         print(1339013190)
         # self.manager.add_widget(SearchScreen(name='search'))
         self.manager.current = 'search'
+        self.manager.transition.direction = 'left'
 
     def se(self, instance):
         pass
@@ -1198,9 +1209,11 @@ class MainScreen(MDScreen):
         self.manager.get_screen('profile').acc_details = self.account
         print("TO PROFILE 2")
         self.manager.current = 'profile'
+        self.manager.transition.direction = 'left'
 
     def to_settings(self, dt):
         self.manager.current = 'settings'
+        self.manager.transition.direction = 'left'
 
     def ai_recommendation(self):
         self.recs_details = Database.recommendations(username=self.account[0])
@@ -1267,6 +1280,7 @@ class RegistrationScreen(MDScreen):
 
     def back(self):
         self.manager.current = 'login'
+        self.manager.transition.direction = 'right'
 
     def register(self, dt):
         if self.password.text == self.conf_pass.text:
@@ -1278,6 +1292,7 @@ class RegistrationScreen(MDScreen):
             #             key='password', obj=self.password)
             self.manager.add_widget(MainScreen(name='main'))
             self.manager.current = 'main'
+            self.manager.transition.direction = 'left'
         else:
             self.password.error = True
             self.conf_pass.error = True
@@ -1947,6 +1962,7 @@ class MusicPlayer(MDScreen):
         self.manager.get_screen("main").song_author = self.song_author.text
         self.manager.get_screen("main").song_image = self.song_image.source
         self.manager.current = self.prev_screen  # 'main'
+        self.manager.transition.direction = 'right'
 
 
 class BassBoost():
@@ -2121,23 +2137,28 @@ class SearchScreen(MDScreen):
             self.manager.get_screen('musicplayer').prev_screen = 'search'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
+            self.manager.transition.direction = 'left'
         except:
             pass
 
     def to_profile(self, dt):
         self.manager.current = 'profile'
+        self.manager.transition.direction = 'left'
 
     def to_settings(self, dt):
         self.manager.current = 'settings'
+        self.manager.transition.direction = 'left'
 
     def logout(self, dt):
         pass
 
     def to_playlist(self, dt):
         self.manager.current = 'playlist'
+        self.manager.transition.direction = 'left'
 
     def to_chat(self, dt):
         self.manager.current = 'chat'
+        self.manager.transition.direction = 'left'
 
     def on_pre_enter(self):
         self.account = Database.acc_details()[0]
@@ -2205,6 +2226,7 @@ class SearchScreen(MDScreen):
     def go_back(self):
         print("ENTERED GO BACK")
         self.manager.current = 'main'
+        self.manager.transition.direction = 'right'
 
     def musicplayer(self, instance):
         self.song_name = instance.text
@@ -2221,6 +2243,7 @@ class SearchScreen(MDScreen):
 
         print('done')
         self.manager.current = 'musicplayer'
+        self.manager.transition.direction = 'left'
         print('done 2')
 
     def dropdown(self, instance):
@@ -2414,26 +2437,32 @@ class Playlist(MDScreen):
             self.manager.get_screen('musicplayer').prev_screen = 'search'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
+            self.manager.transition.direction = 'left'
         except:
             pass
 
     def to_profile(self, dt):
         self.manager.current = 'profile'
+        self.manager.transition.direction = 'left'
 
     def to_settings(self, dt):
         self.manager.current = 'settings'
+        self.manager.transition.direction = 'left'
 
     def logout(self, dt):
         pass
 
     def to_playlist(self, dt):
         self.manager.current = 'playlist'
+        self.manager.transition.direction = 'left'
 
     def to_chat(self, dt):
         self.manager.current = 'chat'
+        self.manager.transition.direction = 'left'
 
     def go_to_main(self):
         self.manager.current = 'main'
+        self.manager.transition.direction = 'right'
 
     def play_details(self, dt):
         self.main = MDBoxLayout(orientation="horizontal",
@@ -2609,6 +2638,7 @@ class Playlist(MDScreen):
             self.manager.get_screen(
                 "playlist_songs").play_date = instance.children[0].text
             self.manager.current = 'playlist_songs'
+            self.manager.transition.direction = 'left'
         except:
             print("EXCEPTION", self.card_new.id)
             self.manager.get_screen(
@@ -2620,6 +2650,7 @@ class Playlist(MDScreen):
             self.manager.get_screen(
                 "playlist_songs").play_date = self.play_date_new.text
             self.manager.current = 'playlist_songs'
+            self.manager.transition.direction = 'left'
 
 
 class Playlist_Songs(MDScreen):
@@ -2849,23 +2880,28 @@ class Playlist_Songs(MDScreen):
             self.manager.get_screen('musicplayer').prev_screen = 'search'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
+            self.manager.transition.direction = 'left'
         except:
             pass
 
     def to_profile(self, dt):
         self.manager.current = 'profile'
+        self.manager.transition.direction = 'left'
 
     def to_settings(self, dt):
         self.manager.current = 'settings'
+        self.manager.transition.direction = 'left'
 
     def logout(self, dt):
         pass
 
     def to_playlist(self, dt):
         self.manager.current = 'playlist'
+        self.manager.transition.direction = 'left'
 
     def to_chat(self, dt):
         self.manager.current = 'chat'
+        self.manager.transition.direction = 'left'
 
     def musicplayer(self, instance):
         self.index = int(instance.children[6].text)
@@ -2906,6 +2942,7 @@ class Playlist_Songs(MDScreen):
         if self.manager.get_screen("musicplayer").sound and self.manager.get_screen("musicplayer").sn != self.song_name:
             self.manager.get_screen("musicplayer").sound.stop()
         self.manager.current = 'musicplayer'
+        self.manager.transition.direction = 'left'
 
     def rgb_to_hex(self, rgb):
         return '#%02x%02x%02x' % rgb
@@ -3240,9 +3277,8 @@ class Playlist_Songs(MDScreen):
 
     def go_back(self):
         print(self.manager.transition.direction)
-        self.manager.transition.direction = 'right'
         self.manager.current = 'playlist'
-        self.manager.transition.direction = 'left'
+        self.manager.transition.direction = 'right'
 
 
 class ChatUI(MDScreen):
@@ -3328,6 +3364,7 @@ class ChatUI(MDScreen):
 
     def go_back(self, dt):
         self.manager.current = 'main'
+        self.manager.transition.direction = 'right'
 
     def send_user_message(self, dt):
         self.counter += 1
@@ -3449,6 +3486,7 @@ class ChatUI(MDScreen):
         if self.manager.get_screen("musicplayer").sound and self.manager.get_screen("musicplayer").sn != self.value[1]:
             self.manager.get_screen("musicplayer").sound.stop()
         self.manager.current = 'musicplayer'
+        self.manager.transition.direction = 'left'
 
 
 class AIChatBot():
@@ -3700,23 +3738,28 @@ class UserProfile(MDScreen):
             self.manager.get_screen('musicplayer').prev_screen = 'search'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
+            self.manager.transition.direction = 'left'
         except:
             pass
 
     def to_profile(self, dt):
         self.manager.current = 'profile'
+        self.manager.transition.direction = 'left'
 
     def to_settings(self, dt):
         self.manager.current = 'settings'
+        self.manager.transition.direction = 'left'
 
     def logout(self, dt):
         pass
 
     def to_playlist(self, dt):
         self.manager.current = 'playlist'
+        self.manager.transition.direction = 'left'
 
     def to_chat(self, dt):
         self.manager.current = 'chat'
+        self.manager.transition.direction = 'left'
 
     def on_pre_enter(self):
 
@@ -3768,6 +3811,7 @@ class UserProfile(MDScreen):
 
     def go_back(self):
         self.manager.current = 'main'
+        self.manager.transition.direction = 'right'
 
 
 class Settings(MDScreen):
@@ -3961,23 +4005,28 @@ class Settings(MDScreen):
             self.manager.get_screen('musicplayer').prev_screen = 'search'
             print("INSTANCE ACTIVE:", instance.active)
             self.manager.current = 'musicplayer'
+            self.manager.transition.direction = 'left'
         except:
             pass
 
     def to_profile(self, dt):
         self.manager.current = 'profile'
+        self.manager.transition.direction = 'left'
 
     def to_settings(self, dt):
         self.manager.current = 'settings'
+        self.manager.transition.direction = 'left'
 
     def logout(self, dt):
         pass
 
     def to_playlist(self, dt):
         self.manager.current = 'playlist'
+        self.manager.transition.direction = 'left'
 
     def to_chat(self, dt):
         self.manager.current = 'chat'
+        self.manager.transition.direction = 'left'
 
     def ai_recommendations(self, dt):
         if self.listitem6icon.icon == 'toggle-switch':
@@ -4028,6 +4077,7 @@ class Settings(MDScreen):
 
     def go_back(self):
         self.manager.current = 'main'
+        self.manager.transition.direction = 'right'
 
 
 class Lyrics(MDScreen):
@@ -4066,9 +4116,8 @@ class Lyrics(MDScreen):
         self.label.height = self.label.texture_size[1]
 
     def go_back(self):
-        self.manager.transition.direction = 'down'
         self.manager.current = 'main'
-        self.manager.transition.direction = 'right'
+        self.manager.transition.direction = 'down'
 
 
 class spotify(MDApp):
