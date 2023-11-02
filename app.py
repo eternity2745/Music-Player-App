@@ -1,3 +1,7 @@
+import azapi
+from googletrans import Translator
+import lyricsgenius
+from lyrics_extractor import SongLyrics
 from gtts import gTTS
 from playsound import playsound
 import talkey
@@ -743,6 +747,10 @@ class MainScreen(MDScreen):
             0.4, None), height=Window.minimum_height, spacing="3dp")
         self.sub_layout_3.add_widget(self.sub_layout_3_1)
 
+        self.lyrics = MDIconButton(
+            icon='microphone-variant', on_press=self.go_to_lyrics, disabled=True)
+        # self.switch.bind(on_press = lambda x: Thread(target ))
+        self.sub_layout_3_1.add_widget(self.lyrics)
         self.switch = MDIconButton(icon='music-accidental-double-flat', on_press=lambda x: Thread(
             target=self.booster, name='Song Booster', daemon=True).start())
         # self.switch.bind(on_press = lambda x: Thread(target ))
@@ -844,13 +852,16 @@ class MainScreen(MDScreen):
                         target=self.mic_ask, daemon=True).start()
                 ),
                 md_bg_color=(1, 0, 0, 0),
-                pos_hint={'top': 0.9, 'left': 0.92},
+                pos_hint={'top': 0.92, 'center_x': 0.05},
                 size_hint=(0.105, 5),
-                padding=[0, 36, 0, 70],
+                padding=[0, 25, 0, 70],
                 spacing="390dp"
             )
         )
         self.add_widget(self.nav_layout)
+
+    def go_to_lyrics(self, dt):
+        self.manager.current = 'lyrics'
 
     def to_main(self, dt):
         self.manager.current = 'main'
@@ -1034,6 +1045,8 @@ class MainScreen(MDScreen):
                                  on_enter=self.enter, on_leave=self.leave)
             Clock.schedule_interval(self.update_slider, 1)
             Clock.schedule_interval(self.update_time, 1)
+            # if self.lyrics.disabled == True:
+            #    Thread(target=self.get_lyrics, daemon=True).start()
         # Clock.schedule_once(self.bass == True, 1)
 
     def booster(self):
@@ -1431,6 +1444,9 @@ class MusicPlayer(MDScreen):
             self.paused = False
             if self.playlist_started == False:
                 self.played_songs.append(self.song)
+
+            Thread(
+                name='lyrics', target=self.get_lyrics, daemon=True).start()
             # self.layout = MDAnchorLayout(anchor_x = "left", anchor_y = "bottom", md_bg_color = "red", size_hint = (0.1,0.1))
             # self.up = MDLabel(text = f"UPCOMING:\n{self.upcoming[1]}\n{self.upcoming[2]}")
             # self.layout.add_widget(self.up)
@@ -1483,6 +1499,9 @@ class MusicPlayer(MDScreen):
             Clock.schedule_interval(self.update_slider, 1)
             Clock.schedule_interval(self.update_time, 1)
             self.clicked = False
+            self.manager.get_screen('main').lyrics.disabled = True
+            Thread(
+                name='lyrics', target=self.get_lyrics, daemon=True).start()
 
         else:
             print("WENT ONTO ELSE")
@@ -1646,6 +1665,9 @@ class MusicPlayer(MDScreen):
             self.manager.get_screen("main").img.source = self.song_image.source
             self.manager.get_screen(
                 "main").end.text = self.convert_seconds_to_min(self.sound.length)
+            self.manager.get_screen('main').lyrics.disabled = True
+            Thread(
+                name='lyrics', target=self.get_lyrics, daemon=True).start()
             MainScreen.on_pre_enter
 
         elif self.paused == False and (self.slider.value > 98.5 or self.new == True) and self.prev == False and self.clicked == False:
@@ -1836,6 +1858,9 @@ class MusicPlayer(MDScreen):
                 "main").song_image, self.song_image.source)
             self.manager.get_screen(
                 "main").end.text = self.convert_seconds_to_min(self.sound.length)
+            self.manager.get_screen('main').lyrics.disabled = True
+            Thread(
+                name='lyrics', target=self.get_lyrics, daemon=True).start()
             MainScreen.on_pre_enter
 
             self.stop = True
@@ -1868,6 +1893,52 @@ class MusicPlayer(MDScreen):
     def touch_down(self, *args):
         if self.sound:
             self.sound.seek((self.slider.value/100)*self.sound.length)
+
+    def get_lyrics(self):
+        if self.sound:
+            genius = lyricsgenius.Genius('IGWgsLHybP3wO96mxe-sH-TUiTNOEKXB8SS1udS4TMuk_ovQUJ74-IkGc9s-1EkhZ5MfsjL5sfc-8ih_SqAmYA',
+                                         skip_non_songs=True, excluded_terms=["(Remix)", "(Live)"],
+                                         remove_section_headers=True)
+
+            try:
+                API = azapi.AZlyrics('google', accuracy=0.5)
+
+                API.artist = self.song_author.text
+                API.title = self.song_title.text
+
+                API.getLyrics(save=False)
+
+                lyrics = API.lyrics
+                if lyrics != '':
+                    self.not_found = False
+                else:
+                    error = 1/0
+            except:
+                try:
+                    extract_lyrics = SongLyrics(
+                        'AIzaSyCEDrw4PLZvE0iEhoYo6FpNq_QqgofLWfs', 'd34c8f76177674713')
+
+                    data = extract_lyrics.get_lyrics(
+                        f"{self.song_title.text} By {self.song_author.text} Lyrics")
+                    lyrics = data['lyrics']
+                    self.not_found = False
+                except:
+                    try:
+                        print("Searching")
+                        song = genius.search_song(
+                            self.song_title.text, self.song_author.text)
+                        print("Found")
+                        genius.response_format = 'markdown'
+                        lyrics = song.lyrics
+                        self.not_found = False
+                    except:
+                        self.not_found = True
+
+            if self.not_found != True:
+                self.manager.get_screen('main').lyrics.disabled = False
+                self.manager.get_screen("lyrics").lyrics = lyrics
+            else:
+                self.manager.get_screen('main').lyrics.disabled = True
 
     def go_back(self, dt):
         self.manager.get_screen("main").sound = self.sound
@@ -3108,7 +3179,6 @@ class Playlist_Songs(MDScreen):
             Database.playlist_edit(
                 playlist_id=self.playlist_id, rename=self.rename_layout.text)
             self.song_name.text = self.rename_layout.text
-            self.bar.title = self.rename_layout.text
             self.play_name = self.rename_layout.text
             self.dialog.dismiss()
 
@@ -3960,35 +4030,45 @@ class Settings(MDScreen):
         self.manager.current = 'main'
 
 
-class VoiceAssistant():
-    def __init__(self):
-        self.recognizer = speech_recognition.Recognizer()
-        self.speaker = pyttsx3.init()
-        self.speaker.setProperty("rate", 150)
+class Lyrics(MDScreen):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.not_found = False
+        self.lyrics = 'Not Found'
 
-        while True:
-            try:
-                print(0)
-                with speech_recognition.Microphone() as mic:
-                    self.recognizer.adjust_for_ambient_noise(mic, duration=0.2)
+        self.scroll_view = MDScrollView(do_scroll_x=False, pos_hint={'top': 0.93, 'center_x': 0.4}, size_hint_y=0.9, scroll_wheel_distance=5, scroll_type=['bars', 'content'], smooth_scroll_end=75,
+                                        always_overscroll=False, bar_margin=0.5, bar_width=7, bar_inactive_color=[0, 0, 0, 0])
+        self.add_widget(self.scroll_view)
 
-                    audio = self.recognizer.listen(mic)
-                    text = self.recognizer.recognize_google(audio).lower()
-                    print(1, text)
+        self.label = MDLabel(text=f"{self.lyrics}", font_style='H3', padding=(400, 0, 0, 0), bold=True, font_name='fonts/ARIAL',
+                             size_hint=(None, None), width="1600dp", halign='left', pos_hint={'right': 0.4}, markup=True, allow_copy=True, allow_selection=True)
+        self.scroll_view.add_widget(self.label)
 
-                    if "alexa" in text:
-                        audio2 = self.recognizer.listen(mic)
-                        text2 = self.recognizer.recognize_google(
-                            audio2).lower()
-                        print(2, text2)
+        self.top_bar = MDTopAppBar(left_action_items=[['chevron-down', lambda x: self.go_back()],],
+                                   title="Music Player",
+                                   # ['microphone', lambda x: Thread(target=self.mic_ask(), name='vc_assistant').start()]],
+                                   # right_action_items=[['magnify', lambda x: self.search(), "Search"]],  # [
+                                   # 'tools', lambda x: spotify.open_settings]],
+                                   pos_hint={'top': 1.0},
+                                   md_bg_color=[1, 0, 0, 0],
+                                   anchor_title='left',
+                                   elevation=0
+                                   )
+        self.add_widget(self.top_bar)
 
-                        if text2 is not None:
-                            print(3, text2)
-                            self.speaker.say(text2)
-                            self.speaker.runAndWait()
-            except Exception as e:
-                print(e)
-                continue
+    def on_pre_enter(self):
+        self.label.text = self.lyrics
+
+        Clock.schedule_once(self.lyric_height)
+
+    def lyric_height(self, dt):
+        print(self.label.texture_size)
+        self.label.height = self.label.texture_size[1]
+
+    def go_back(self):
+        self.manager.transition.direction = 'down'
+        self.manager.current = 'main'
+        self.manager.transition.direction = 'right'
 
 
 class spotify(MDApp):
@@ -4014,6 +4094,7 @@ class spotify(MDApp):
         sm.add_widget(ChatUI(name='chat'))
         sm.add_widget(UserProfile(name='profile'))
         sm.add_widget(Settings(name='settings'))
+        sm.add_widget(Lyrics(name='lyrics'))
         # Thread(target=self.hello, name="Voice Assistant")
         return sm
 
