@@ -1955,7 +1955,7 @@ class MusicPlayer(MDScreen):
                                          remove_section_headers=True)
 
             try:
-                API = azapi.AZlyrics('google', accuracy=0.5)
+                API = azapi.AZlyrics('google', accuracy=0.8)
 
                 API.artist = self.song_author.text
                 API.title = self.song_title.text
