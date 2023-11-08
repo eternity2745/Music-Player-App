@@ -193,10 +193,12 @@ class Database():
         )
         cursor = cnx.cursor()
 
-    def create_account(username, email, phone, password, image):
+    def create_account(username, email, phone, password):
         id = int(str((random.random())).split('.')[1])
-        cursor.execute('INSERT INTO users (id, username, email, phone, password, image) VALUES (%s, %s, %s, %s, %s, %s)',
-                       (id, username, email, phone, password))
+        today = date.today()
+        t = today.strftime("%Y-%m-%d")
+        cursor.execute('INSERT INTO users (id, username, email, phone, password, image, created) VALUES (%s, %s, %s, %s, %s, %s, %s)',
+                       (id, username, email, phone, password, 'images/account.png', t))
         cnx.commit()
         global account
         global logged_in
@@ -224,6 +226,33 @@ class Database():
     def acc_details():
         if logged_in:
             return account
+
+    def account_edit(acc, username=None, email=None, password=None, image=None):
+        global account
+        if username:
+            cursor.execute(
+                "UPDATE users SET username = %s WHERE username = %s", (username, acc[0]))
+            cnx.commit()
+
+        if email:
+            cursor.execute(
+                "UPDATE users SET email = %s WHERE email = %s", (email, acc[1]))
+            cnx.commit()
+
+        if password:
+            cursor.execute(
+                "UPDATE users SET password = %s WHERE password = %s", (password, acc[2]))
+            cnx.commit()
+
+        if image:
+            print(image)
+            cursor.execute(
+                "UPDATE users SET image = %s WHERE image = %s", (image, acc[4]))
+            cnx.commit()
+
+        cursor.execute(
+            "SELECT username, email, password, phone, image, created FROM users WHERE email=%s", (email if email != None else account[1], ))
+        account = cursor.fetchone()
 
     def playlist_count(username):
         cursor.execute(
@@ -444,7 +473,7 @@ class LoginScreen(MDScreen, MDFloatLayout):
         # self.frosted_glass = FrostedGlass(
         #    pos_hint={'center_x': 0.5, 'center_y': 0.5}, background=self.img, size_hint=(0.5, 0.5), luminosity=1.3, outline_color="#000000")
         # self.add_widget(self.frosted_glass)
-        self.label = MDLabel(text='[font=cracky]Music Player App[/font]', pos_hint={'top': 1}, markup=True, font_family="fonts/CurlzMT.ttf",  # , theme_text_color='Custom',
+        self.label = MDLabel(text='[font=cracky]Chorduce[/font]', pos_hint={'top': 1}, markup=True, font_family="fonts/CurlzMT.ttf",  # , theme_text_color='Custom',
                              halign='center', size_hint=(1, 0.0005), valign='top', font_style="H2", bold=True)
         self.login_form.add_widget(self.label)
         # self.add_widget(FitImage(source='images/login.jpg'))
@@ -775,7 +804,7 @@ class MainScreen(MDScreen):
         self.sub_layout_3_1.add_widget(self.mute)
 
         self.top_bar = MDTopAppBar(left_action_items=[['menu', lambda x: self.nav_drawer.set_state('open'), "Menu"]],
-                                   title="Music Player",
+                                   title="Chorduce",
                                    # ['microphone', lambda x: Thread(target=self.mic_ask(), name='vc_assistant').start()]],
                                    right_action_items=[['magnify', lambda x: self.search(), "Search"]],  # [
                                    # 'tools', lambda x: spotify.open_settings]],
@@ -3626,10 +3655,10 @@ class UserProfile(MDScreen):
         self.sub_layout1.add_widget(self.sub_layout3)
 
         self.icon1 = MDIconButton(icon='rename-outline', pos_hint={
-                                  'top': 1}, icon_size='23sp', md_bg_color=[0, 1, 1, 0.5])
+                                  'top': 1}, icon_size='23sp', md_bg_color=[0, 1, 1, 0.5], on_press=self.account_edit)
         self.sub_layout3.add_widget(self.icon1)
         self.icon2 = MDIconButton(icon='image-edit-outline', pos_hint={
-                                  'top': 1}, icon_size='23sp', md_bg_color=[0, 1, 1, 0.5])
+                                  'top': 1}, icon_size='23sp', md_bg_color=[0, 1, 1, 0.5], on_press=self.confirm_user_image)
         self.sub_layout3.add_widget(self.icon2)
 
         self.main_layout = MDBoxLayout(
@@ -3825,30 +3854,32 @@ class UserProfile(MDScreen):
             self.manager.get_screen("musicplayer").sound.stop()
         self.manager.current = 'musicplayer'
 
-    def confirm_playlist_rename(self, dt):
+    def account_edit(self, dt):
 
-        # self.rename_layout = MDBoxLayout(orientation="horizontal",
-        #                                 spacing="12dp",
-        #                                 size_hint_y=None,
-        #                                 height="200dp")
+        self.dialog_layout = MDBoxLayout(orientation='vertical', pos_hint={
+                                         'center_x': 0.5, 'center_y': 0.5}, height='200dp', spacing="10dp", size_hint_y=None)
 
-        self.rename_layout = MDTextField(
-            hint_text="New Playlist Name",
-            pos_hint={'center_y': 0.5, },
-            max_text_length=30,
-            helper_text_mode='on_error'
-        )
+        self.username_edit = MDTextField(hint_text="username", mode='rectangle', size_hint_x=0.65, pos_hint={
+                                         'center_x': 0.5, 'center_y': 0.5}, icon_left='account')
+        self.email_edit = MDTextField(hint_text='email', mode='rectangle', size_hint_x=0.65, pos_hint={
+            'center_x': 0.5, 'center_y': 0.5}, icon_left='email')
+        self.password_edit = MDTextField(hint_text='password', mode='rectangle', size_hint_x=0.65, pos_hint={
+                                         'center_x': 0.5, 'center_y': 0.5}, icon_left='key')
 
-        # self.main.add_widget(self.play_n)
+        self.dialog_layout.add_widget(self.username_edit)
+        self.dialog_layout.add_widget(self.email_edit)
+        self.dialog_layout.add_widget(self.password_edit)
+
         self.dialog = MDDialog(
-            title="Rename Playlist",
+            title="Edit Account Details",
+            text='Change only the details you wish to be changed',
             type="custom",
             auto_dismiss=False,
-            content_cls=self.rename_layout,
+            content_cls=self.dialog_layout,
             buttons=[
                 MDFlatButton(
                     text="CONFRIM",
-                    on_release=self.rename_playlist
+                    on_release=self.account_edit_confirmation
                 ),
                 MDFlatButton(
                     text="CANCEL",
@@ -3859,32 +3890,28 @@ class UserProfile(MDScreen):
 
         self.dialog.open()
 
-    def rename_playlist(self, dt):
-        if self.rename_layout.text != '' and len(self.rename_layout.text) <= 30:
-            Database.playlist_edit(
-                playlist_id=self.playlist_id, rename=self.rename_layout.text)
-            self.song_name.text = self.rename_layout.text
-            self.play_name = self.rename_layout.text
+    def account_edit_confirmation(self, dt):
+        if self.username_edit.text != '' or self.email_edit.text != '' or self.password_edit.text != '':
+            Database.account_edit(acc=self.account, username=(self.username_edit.text if self.username_edit.text != '' else None),
+                                  email=(self.email_edit.text if self.email_edit.text != '' else None), password=(self.password_edit.text if self.password_edit.text != '' else None))
+            self.account = Database.acc_details()
+            self.username.text = self.account[0]
+            self.email.text = self.account[1]
             self.dialog.dismiss()
 
-    def confirm_playlist_image(self, dt):
-
-        self.upload_layout = MDBoxLayout(
-            orientation='vertical', size_hint_y=None, height="200dp", width="25dp")
-
-        self.upload = Button(background_normal='images/upload.png',
-                             on_press=self.choose, background_down='images/loading.png')
-        self.upload_layout.add_widget(self.upload)
+    def confirm_user_image(self, dt):
+        self.upload = Button(background_normal=self.account[4],
+                             on_press=self.choose, background_down='images/loading.png', pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint_y=None, height="300dp")
 
         self.dialog = MDDialog(
-            title="Create Playlist",
+            title="Edit Profile Picture",
             type="custom",
             auto_dismiss=False,
-            content_cls=self.upload_layout,
+            content_cls=self.upload,
             buttons=[
                 MDFlatButton(
                     text="CONFIRM",
-                    on_release=self.image_edit_playlist
+                    on_release=self.image_edit_user
                 ),
                 MDFlatButton(
                     text="CANCEL",
@@ -3896,30 +3923,20 @@ class UserProfile(MDScreen):
         self.dialog.open()
 
     def choose(self, dt):
-        self.play_img = filechooser.open_file()
-        # print(self.play_img, self.play_img[0])
         try:
+            self.play_img = filechooser.open_file()
+        # print(self.play_img, self.play_img[0])
             self.upload.background_normal = self.play_img[0]
             print(self.play_img[0], self.upload.background_normal)
         except:
             toast(text="Unable to load image")
 
-    def image_edit_playlist(self, dt):
-        if self.upload.background_normal != 'images/upload.png':
+    def image_edit_user(self, dt):
+        if self.upload.background_normal != 'images/account.png':
 
-            Database.playlist_edit(
-                playlist_id=self.playlist_id, image=self.upload.background_normal)
-            self.bg.source = self.upload.background_normal
-            self.bg_img = self.upload.background_normal
-            self.hex = self.colour_extractor(self.bg_img)
-            if self.bg.texture.size != (248, 248):
-                image = Im.open(self.bg_img)
-                new = image.resize((248, 248))
-                new.save('-new.'.join(self.bg_img.rsplit('.', 1)))
-                self.bg.source = '-new.'.join(self.bg_img.rsplit('.', 1))
-
-            self.bg_grad.texture = Gradient.vertical(
-                get_color_from_hex(self.hex[1]), get_color_from_hex(self.hex[0]))
+            Database.account_edit(
+                acc=self.account, image=self.upload.background_normal)
+            self.user_image.source = self.upload.background_normal
 
             self.dialog.dismiss()
 
@@ -4199,12 +4216,14 @@ class Lyrics(MDScreen):
         super().__init__(*args, **kwargs)
         self.not_found = False
         self.lyrics = 'Not Found'
+        LabelBase.register(
+            name='arial', fn_regular='fonts/ArialUnicodeMS.ttf')
 
         self.scroll_view = MDScrollView(do_scroll_x=False, pos_hint={'top': 0.93, 'center_x': 0.4}, size_hint_y=0.9, scroll_wheel_distance=5, scroll_type=['bars', 'content'], smooth_scroll_end=75,
                                         always_overscroll=False, bar_margin=0.5, bar_width=7, bar_inactive_color=[0, 0, 0, 0])
         self.add_widget(self.scroll_view)
 
-        self.label = MDLabel(text=f"{self.lyrics}", font_style='H3', padding=(400, 0, 0, 0), bold=True, font_name='fonts/ARIAL',
+        self.label = MDLabel(text=f"[font=arial]{self.lyrics}[/font]", font_style='H3', padding=(400, 0, 0, 0), bold=True, font_family='fonts/ArialUnicodeMS.ttf',
                              size_hint=(None, None), width="1600dp", halign='left', pos_hint={'right': 0.4}, markup=True, allow_copy=True, allow_selection=True)
         self.scroll_view.add_widget(self.label)
 
@@ -4239,7 +4258,7 @@ class spotify(MDApp):
 
         Database.connect()
         self.icon = 'images/bheeshma parvam.jpg'
-        self.title = "Music Player"
+        self.title = "Chorduce"
         self.theme_cls.theme_style = "Dark"
         # self.theme_cls.primary_hue = '500'
         # self.theme_cls.primary_palette = "Blue"
