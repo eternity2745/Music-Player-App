@@ -12,4 +12,5 @@ for i in q:
 
 cur.close()
 con.close()
+
     

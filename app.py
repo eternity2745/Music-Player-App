@@ -1,3 +1,7 @@
+from toastify import notify
+from winotify import Notification
+import winotify
+import json
 import azapi
 from googletrans import Translator
 import lyricsgenius
@@ -282,16 +286,19 @@ class Database():
             return result
 
     def get_song_detail(name=None, id=None):
+        print(name)
         try:
             if name:
                 cursor.execute("SELECT * FROM songs WHERE title = %s", (name,))
                 result = cursor.fetchone()
+                print("DATABASE:", result)
                 return result
             elif id:
                 cursor.execute("SELECT * FROM songs WHERE id = %s", (id, ))
                 result = cursor.fetchone()
                 return result
-        except:
+        except Exception as e:
+            raise e
             return "None"
 
     def song_match(text):
@@ -1421,6 +1428,7 @@ class MusicPlayer(MDScreen):
 
     def on_pre_enter(self, *args):
         self.song = Database.get_song_detail(name=self.song_name)
+        print(self.song)
         print(
             f"MUSICPLAYER: {self.song[0]}, {self.manager.get_screen('main').account[0]}")
 
@@ -1919,6 +1927,16 @@ class MusicPlayer(MDScreen):
 
             self.stop = True
         self.already_started = False
+        print(Window.focus)
+        print(MDApp.name)
+        if Window.focus == False:
+            print("Entered Into Focus")
+            notify(BodyText=self.song_author.text, TitleText=self.song_title.text,
+                   AppName='Chorduce', ImagePath=self.song_image.source)
+            Window.set_title(f'Chorduce - {self.song_title.text}')
+
+        else:
+            Window.set_title('Chorduce')
 
         if self.manager.get_screen('main').sound != None:
             vol = {'volume-high': 1, 'volume-variant-off': 0,
@@ -1926,13 +1944,6 @@ class MusicPlayer(MDScreen):
             self.m_icon = self.manager.get_screen(
                 'main').mute.icon  # volume-variant-off
             self.manager.get_screen('main').sound.volume = vol[self.m_icon]
-
-        # notification.notify(app_icon = None, title = self.song_title.text, app_name = "Music Player",
-        #                    message = self.song_author.text, timeout = 10, toast = False)
-
-        # elif self.new == True:
-        #    self.new = False
-        #    self.stop = True
 
     def update_slider(self, dt):
         self.slider.value = (self.sound.get_pos() / self.sound.length) * 100
@@ -4162,9 +4173,24 @@ class Settings(MDScreen):
     def ai_recommendations(self, dt):
         if self.listitem6icon.icon == 'toggle-switch':
             self.listitem6icon.icon = 'toggle-switch-off'
+            with open("settings.json") as f:
+                data = json.load(f)
+
+                data["Recommendations"] = "Disabled"
+
+            with open("replayScript.json", "w") as f:
+                json.dump(data, f)
+
             toast("Turned off Assistant Recommendations")
         else:
             self.listitem6icon.icon = 'toggle-switch'
+            with open("settings.json") as f:
+                data = json.load(f)
+
+                data["Recommendations"] = "Enabled"
+
+            with open("replayScript.json", "w") as f:
+                json.dump(data, f)
             toast("Turned On Assistant Recommendations")
 
     def time_pick(self, dt):
@@ -4197,14 +4223,31 @@ class Settings(MDScreen):
 
     def notif_config(self, dt):
         if self.listitem8icon.icon == 'toggle-switch-off':
+            with open("settings.json") as f:
+                data = json.load(f)
+
+                data["Notifications"] = "Enabled"
+
+            with open("replayScript.json", "w") as f:
+                json.dump(data, f)
             self.listitem8icon.icon = 'toggle-switch'
+            toast("Notifications Enabled")
         else:
+            with open("settings.json") as f:
+                data = json.load(f)
+
+                data["Notifications"] = "Disabled"
+
+            with open("replayScript.json", "w") as f:
+                json.dump(data, f)
             self.listitem8icon.icon = 'toggle-switch-off'
+            toast("Notifications Disabled")
 
     def user_data(self, dt):
         with open(rf'C:\Users\pc\Desktop\EuphoniusUserData.txt', 'a') as f:
-            f.write('User Data for you')
-            toast("User Data Downloaded")
+            data = Database.user_data(username=Database.acc_details()[0])
+            f.write(data)
+            toast("User Data Saved To Desktop")
 
     def go_back(self):
         self.manager.current = 'main'
