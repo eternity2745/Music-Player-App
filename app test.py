@@ -90,11 +90,11 @@ repo_id = "google/flan-t5-xl"
 os.environ['HUGGINGFACEHUB_API_TOKEN'] = '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'
 
 
-class Database(): #Intialising Database Class
+class Database():
     cnx = None
     cursor = None
 
-    def connect(): #Connecting to Database
+    def connect():
         global cnx
         global cursor
         cnx = mysql.connector.connect(
@@ -104,7 +104,7 @@ class Database(): #Intialising Database Class
         )
         cursor = cnx.cursor()
 
-    def create_account(username, email, phone, password): #Function to create account
+    def create_account(username, email, phone, password):
         id = int(str((random.random())).split('.')[1])
         today = date.today()
         t = today.strftime("%Y-%m-%d")
@@ -119,7 +119,7 @@ class Database(): #Intialising Database Class
         logged_in = True
         return True, account
 
-    def login(email, password): #Function to login to account
+    def login(email, password):
         cursor.execute(
             'SELECT username, email, password, phone, image, created FROM users WHERE email=%s AND password = %s', (email, password))
         global account
@@ -131,11 +131,11 @@ class Database(): #Intialising Database Class
         else:
             return False
 
-    def acc_details(): #Function to get account details
+    def acc_details():
         if logged_in:
             return account
 
-    def account_edit(acc, username=None, email=None, password=None, image=None): #Function to edit account details
+    def account_edit(acc, username=None, email=None, password=None, image=None):
         global account
         if username:
             cursor.execute(
@@ -161,12 +161,12 @@ class Database(): #Intialising Database Class
             "SELECT username, email, password, phone, image, created FROM users WHERE email=%s", (email if email != None else account[1], ))
         account = cursor.fetchone()
 
-    def playlist_count(username): #Function to take count of playlists
+    def playlist_count(username):
         cursor.execute(
             f"SELECT count(*) FROM playlists WHERE user = '{username}'")
         return cursor.fetchone()
 
-    def music(limit, rec=None, lang=None, genre=None): #Function to fetch music from database
+    def music(limit, rec=None, lang=None, genre=None):
 
         if rec == None and lang == None:
             cursor.execute(
@@ -201,7 +201,7 @@ class Database(): #Intialising Database Class
 
             return result
 
-    def get_song_detail(name=None, id=None): #Function to get song detail
+    def get_song_detail(name=None, id=None):
         try:
             if name:
                 cursor.execute("SELECT * FROM songs WHERE title = %s", (name,))
@@ -214,7 +214,7 @@ class Database(): #Intialising Database Class
         except Exception as e:
             return "None"
 
-    def song_match(text): #Function to search song
+    def song_match(text):
         try:
             cursor.execute(
                 f"SELECT * FROM songs WHERE title LIKE '{text}%' OR author LIKE '%{text}%' OR image LIKE '%{text}%' OR language LIKE '%{text}%' OR genre LIKE '%{text}%' GROUP BY title LIMIT 20")
@@ -223,7 +223,7 @@ class Database(): #Intialising Database Class
         except:
             return None
 
-    def playlists_info(username=None, id=None): #Function to get info about playlists
+    def playlists_info(username=None, id=None):
         try:
             if username:
                 cursor.execute(
@@ -237,7 +237,7 @@ class Database(): #Intialising Database Class
         except:
             return 0
 
-    def create_playlist(name, image, user, date, colours): #Function to create playlist
+    def create_playlist(name, image, user, date, colours):
         try:
             cursor.execute(
                 "INSERT INTO playlists (name, image, user, created, colour) VALUES (%s, %s, %s, %s, %s)", (name, image, user, date, colours))
@@ -245,7 +245,7 @@ class Database(): #Intialising Database Class
         except:
             raise Exception
 
-    def playlist_songs(id, order_by=None): #Function to get songs in playlists
+    def playlist_songs(id, order_by=None):
         try:
             if order_by != None:
                 cursor.execute(
@@ -260,7 +260,7 @@ class Database(): #Intialising Database Class
         except Exception:
             raise Exception
 
-    def add_playlist_song(playlist_id, song_id, song_name): #Function to add songs to playlist
+    def add_playlist_song(playlist_id, song_id, song_name):
         today = date.today().strftime("%Y/%m/%d")
 
         try:
@@ -270,7 +270,7 @@ class Database(): #Intialising Database Class
         except Exception:
             raise Exception
 
-    def delete_playlist(playlist_id): #Function to delete a playlist
+    def delete_playlist(playlist_id):
         try:
 
             cursor.execute(
@@ -283,7 +283,7 @@ class Database(): #Intialising Database Class
         except Exception:
             raise Exception
 
-    def delete_playlist_song(playlist_id, song_id): #Function to delete song from playlist
+    def delete_playlist_song(playlist_id, song_id):
         try:
             cursor.execute(
                 f'DELETE FROM playlist_songs WHERE playlist_id = {playlist_id} AND song_id = {song_id}')
@@ -291,7 +291,7 @@ class Database(): #Intialising Database Class
         except Exception:
             raise Exception
 
-    def playlist_edit(playlist_id, rename=None, image=None): #Function to edit playlist details
+    def playlist_edit(playlist_id, rename=None, image=None):
         try:
             if rename:
                 cursor.execute(
@@ -304,35 +304,48 @@ class Database(): #Intialising Database Class
         except Exception:
             raise Exception
 
-    def add_to_listening_history(song_id, username, author, language, genre): #Add song to listening history
+    def jsondata(email, password):
+        store = JsonStore('app_details.json')
+        store.put('login_details', email=email, password=password)
+
+    def get_jsondata():
+        store = JsonStore('app_details.json')
+        username = store.get('login_details')['email']
+        password = store.get('login_details')['password']
+        if username:
+            return username, password
+        else:
+            return None
+
+    def add_to_listening_history(song_id, username, author, language, genre):
         cursor.execute(
             "INSERT INTO listening_history VALUES(%s, %s, %s, %s, %s)", (song_id, username, author, language, genre))
         cnx.commit()
 
-    def top_played(username): #Function to get top 3 played songs
+    def top_played(username):
         cursor.execute(
             f"SELECT song_id FROM listening_history WHERE username='{username}' GROUP BY song_id ORDER BY count(*) DESC LIMIT 3")
         l = cursor.fetchall()
         return l
 
-    def recommendations(username): #Function to get song recommendations
+    def recommendations(username):
         cursor.execute(f"""select s.id, s.title, s.author, s.image, s.mp3, s.language, s.genre from songs s, listening_history lh WHERE s.id NOT IN (SELECT DISTINCT song_id FROM listening_history WHERE username = '{username}') 
                        AND ((s.language, s.genre) IN (SELECT language, genre FROM listening_history WHERE username = '{username}' GROUP BY genre) 
                        OR s.author IN (SELECT DISTINCT author FROM listening_history WHERE username = '{username}')) GROUP BY s.title ORDER BY RAND() LIMIT 8""")
         return cursor.fetchall()
 
 
-class LoginScreen(MDScreen, MDFloatLayout): #Initialising Login Screen
+class LoginScreen(MDScreen, MDFloatLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         LabelBase.register(
-            name='cracky', fn_regular='fonts/CurlzMT.ttf', fn_bold='fonts/CURLZ.ttf') #Registering A new font
+            name='cracky', fn_regular='fonts/CurlzMT.ttf', fn_bold='fonts/CURLZ.ttf')
 
         self.login_form = MDCard(orientation='vertical',
                                  size_hint=(0.3, 0.5),
                                  pos_hint={'center_x': 0.5, 'center_y': 0.5},
-                                 elevation=5, spacing="10dp", padding="40dp", md_bg_color=[0, 0, 0, 0.8]) 
+                                 elevation=5, spacing="10dp", padding="40dp", md_bg_color=[0, 0, 0, 0.8])
         self.img = FitImage(source='images/login.jpg',)
         self.add_widget(self.img)
 
@@ -358,7 +371,7 @@ class LoginScreen(MDScreen, MDFloatLayout): #Initialising Login Screen
         self.login_form.add_widget(self.create_account_button)
         self.add_widget(self.login_form)
 
-    def icon(self, instance): #Changing password icon
+    def icon(self, instance):
         if instance.icon_right == 'eye-off':
             instance.icon_right = 'eye-on'
             instance.password = False
@@ -366,7 +379,7 @@ class LoginScreen(MDScreen, MDFloatLayout): #Initialising Login Screen
             instance.icon_right = 'eye-off'
             instance.password = True
 
-    def login(self): #Function to login
+    def login(self):
         status = Database.login(email=self.email.text,
                                 password=self.password.text)
         if status:
@@ -378,12 +391,12 @@ class LoginScreen(MDScreen, MDFloatLayout): #Initialising Login Screen
             self.email.error = True
             self.password.error = True
 
-    def reg(self): #Change to registration screen
+    def reg(self):
         self.manager.current = 'registration'
         self.manager.transition.direction = 'left'
 
 
-class RegistrationScreen(MDScreen):#Initialize Registration Screen
+class RegistrationScreen(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -421,11 +434,11 @@ class RegistrationScreen(MDScreen):#Initialize Registration Screen
 
         self.add_widget(self.registration_form)
 
-    def back(self): #Go back to login screen
+    def back(self):
         self.manager.current = 'login'
         self.manager.transition.direction = 'right'
 
-    def register(self, dt): #Registering a new account
+    def register(self, dt):
         if self.password.text == self.conf_pass.text:
             Database.create_account(
                 self.username.text, self.email.text, self.phone.text, self.password.text, 'images/account.png')
@@ -437,7 +450,7 @@ class RegistrationScreen(MDScreen):#Initialize Registration Screen
             self.conf_pass.error = True
 
 
-class SplashScreen(MDScreen): #Initializing Splash Screen 
+class SplashScreen(MDScreen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         LabelBase.register(name='mercy',
@@ -462,7 +475,7 @@ class SplashScreen(MDScreen): #Initializing Splash Screen
             on_complete=self.loading)
         self.animation1.start(self.img)
 
-    def loading(self, anim, widget): #Executing animations and initializing spinner and adding label
+    def loading(self, anim, widget):
         self.spinner = MDSpinner(size_hint=(0.025, 0.025), pos_hint={'center_x': 0.5, 'center_y': 0.3}, palette=[
             [0.28627450980392155, 0.8431372549019608, 0.596078431372549, 1],
             [0.3568627450980392, 0.3215686274509804, 0.8666666666666667, 1],
@@ -483,7 +496,7 @@ class SplashScreen(MDScreen): #Initializing Splash Screen
         self.add_widget(self.label)
         Clock.schedule_once(self.add_screens)
 
-    def add_screens(self, dt): #Adding other screens
+    def add_screens(self, dt):
         self.manager.add_widget(MainScreen(name='main'))
         self.manager.add_widget(Playlist(name='playlist'))
         self.manager.add_widget(Playlist_Songs(name='playlist_songs'))
@@ -494,7 +507,7 @@ class SplashScreen(MDScreen): #Initializing Splash Screen
         self.spinner.active = False
         self.manager.current = 'main'
 
-    def times_of_day(self, h): #Getting the time of day
+    def times_of_day(self, h):
         return (
             "Morning"
             if 1 <= h < 12
@@ -503,7 +516,7 @@ class SplashScreen(MDScreen): #Initializing Splash Screen
             else "Evening"
         )
 
-    def resize(self, window, width, height): #Resize background gradient w.r.t screen resizing
+    def resize(self, window, width, height):
         self.rect.size = Window.size
 
 
