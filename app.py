@@ -587,7 +587,7 @@ class MainScreen(MDScreen):
         s2 = Database.music(limit=8, lang='malayalam')
         s3 = Database.music(limit=8, lang='english')
         s4 = Database.music(limit=8, lang='hindi')
-        s5 = list(s1)
+        s5 = Database.music(limit=8, lang='tamil')
         for i in s1:
             self.card1 = MDCard(orientation="vertical", height="250dp", padding=dp(4), size_hint_y=None, size_hint_x=1, spacing=dp(5),
                                 ripple_behavior=True, focus_behavior=True, elevation=0, focus_color=(31, 31, 31, 0.15))

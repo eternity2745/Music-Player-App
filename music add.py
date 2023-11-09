@@ -10,7 +10,7 @@ while True:
         image = input("Song image: ")
         image = f"images/{image}"
         mp3 = f"music/{name}.mp3"
-        lang = "tamil"
+        lang = "malayalam"
         genre = input("Song genre: ")
 
         cur.execute("INSERT INTO songs (title, author, image, mp3, language, genre) VALUES ('%s', '%s', '%s', '%s', '%s','%s')"%(name,author,image,mp3,lang,genre))
