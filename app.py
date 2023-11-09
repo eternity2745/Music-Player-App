@@ -154,7 +154,7 @@ class Database():
 
         if image:
             cursor.execute(
-                "UPDATE users SET image = %s WHERE image = %s", (image, acc[4]))
+                "UPDATE users SET image = %s WHERE username = %s", (image, acc[0]))
             cnx.commit()
 
         cursor.execute(
@@ -223,19 +223,24 @@ class Database():
         except:
             return None
 
-    def playlists_info(username):
+    def playlists_info(username=None, id=None):
         try:
-            cursor.execute(
-                "SELECT * FROM playlists WHERE user = %s", (username, ))
-            result = cursor.fetchall()
-            return result
+            if username:
+                cursor.execute(
+                    "SELECT * FROM playlists WHERE user = %s", (username, ))
+                result = cursor.fetchall()
+                return result
+            elif id:
+                cursor.execute("SELECT * FROM playlists WHERE id = %s", (id, ))
+                result = cursor.fetchone()
+                return result
         except:
             return 0
 
-    def create_playlist(name, image, user, date):
+    def create_playlist(name, image, user, date, colours):
         try:
             cursor.execute(
-                "INSERT INTO playlists (name, image, user, created) VALUES (%s, %s, %s, %s)", (name, image, user, date))
+                "INSERT INTO playlists (name, image, user, created, colour) VALUES (%s, %s, %s, %s, %s)", (name, image, user, date, colours))
             cnx.commit()
         except:
             raise Exception
@@ -957,11 +962,14 @@ class MainScreen(MDScreen):
         self.counter += 1
         l = [1, 15, 35, 50, 75, 100]
         self.account = Database.acc_details()
-        with open("settings.json") as f:
-            data = json.load(f)
-            recs = data['Recommendations']
-        if self.counter in l and recs == 'Enabled':
-            Thread(target=self.ai_recommendation, daemon=True).start()
+        try:
+            with open("settings.json") as f:
+                data = json.load(f)
+                recs = data['Recommendations']
+            if self.counter in l and recs == 'Enabled':
+                Thread(target=self.ai_recommendation, daemon=True).start()
+        except:
+            pass
         for card in self.recommended_section.children:
             card.focus_color = (31, 31, 31, 0.15)
 
@@ -2044,12 +2052,16 @@ class Playlist(MDScreen):
         self.manager.transition.direction = 'right'
 
     def colour_extractor(self, path):
-        color_thief = ColorThief(path)
-        palette = color_thief.get_palette(color_count=2)
-        l = []
+        try:
+            color_thief = ColorThief(path)
+            palette = color_thief.get_palette(color_count=2)
+            l = []
 
-        for i in palette:
-            l.append(self.rgb_to_hex(i))
+            for i in palette:
+                l.append('#%02x%02x%02x' % i)
+
+        except:
+            l = ["#000000", "#00007c"]
 
         return l
 
@@ -2103,11 +2115,11 @@ class Playlist(MDScreen):
         if self.play_n.text != '' and self.upload.state == 'normal' and len(self.play_n.text) <= 30:
             today = date.today()
             t = today.strftime("%d/%m/%Y")
-            # colours = self.colour_extractor(path=self.upload.background_normal)
+            colours = self.colour_extractor(path=self.upload.background_normal)
             Database.create_playlist(
                 name=self.play_n.text, image=(
                     self.upload.background_normal if self.upload.background_normal != 'images/upload.png' else 'images/no img.png'),
-                user=self.username, date=t,  # colours =
+                user=self.username, date=t,  colours=str(colours)
             )
 
             self.playlists = Database.playlists_info(username=self.username)
@@ -2238,6 +2250,8 @@ class Playlist_Songs(MDScreen):
 
     def on_pre_enter(self):
         self.clear_widgets()
+        self.colours = Database.playlists_info(id=self.playlist_id)[5]
+        self.hex = ast.literal_eval(self.colours)
         self.songs = Database.playlist_songs(
             id=self.playlist_id, order_by="created")
 
@@ -2245,8 +2259,6 @@ class Playlist_Songs(MDScreen):
         for i in self.songs:
             self.song_info = Database.get_song_detail(id=i[1])
             self.song_infos.append(self.song_info)
-
-        self.hex = self.colour_extractor(self.bg_img)
 
         with self.canvas:
             Color(0.5, 0.5, 0.5,
@@ -2476,28 +2488,6 @@ class Playlist_Songs(MDScreen):
             self.manager.get_screen("musicplayer").sound.stop()
         self.manager.current = 'musicplayer'
         self.manager.transition.direction = 'left'
-
-    def rgb_to_hex(self, rgb):
-        return '#%02x%02x%02x' % rgb
-
-    def colour_extractor(self, path):
-        try:
-            color_thief = ColorThief(path)
-            palette = color_thief.get_palette(color_count=2)
-            l = []
-
-            for i in palette:
-                l.append(self.rgb_to_hex(i))
-
-            return l
-        except:
-            palette = [(0, 0, 0), (0, 0, 124), (0, 0, 248)]
-            l = []
-
-            for i in palette:
-                l.append(self.rgb_to_hex(i))
-
-            return l
 
     def confirm_playlist_deletion(self, dt):
         self.main = MDBoxLayout(orientation="vertical",
@@ -3307,6 +3297,9 @@ class UserProfile(MDScreen):
             self.email.text = self.account[1]
             self.dialog.dismiss()
 
+            self.manager.get_screen('main').nav_header.title = self.username.text
+            self.manager.get_screen('main').nav_header.text = self.email.text
+
     def confirm_user_image(self, dt):
         self.upload = Button(background_normal=self.account[4],
                              on_press=self.choose, background_down='images/loading.png', pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint_y=None, height="300dp")
@@ -3607,9 +3600,10 @@ class Settings(MDScreen):
             toast("Notifications Disabled")
 
     def user_data(self, dt):
-        with open(rf'C:\Users\pc\Desktop\EuphoniusUserData.txt', 'a') as f:
-            data = Database.user_data(username=Database.acc_details()[0])
-            f.write(data)
+        with open(rf'C:\Users\pc\Desktop\ChorduceUserData.txt', 'a') as f:
+            data = Database.acc_details()
+            for i in data:
+                f.write(str(i)+"\n")
             toast("User Data Saved To Desktop")
 
     def go_back(self):
