@@ -1,3 +1,5 @@
+from datetime import datetime as dt
+from kivymd.uix.spinner.spinner import MDSpinner
 from kivy.core.text import LabelBase
 from kivy.factory import Factory
 from kivy.lang import Builder
@@ -296,44 +298,61 @@ class testing3(MDScreen):
 class reg_screen(MDScreen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        LabelBase.register(
-            name='cracky', fn_regular='fonts/CurlzMT.ttf', fn_bold='fonts/CURLZ.ttf')
+        LabelBase.register(name='mercy',
+                           fn_regular='fonts/Mercy Christole.ttf')
 
-        self.back_button = MDIconButton(
-            icon='arrow-left', pos_hint={'top': 1, 'left': 1})
-        self.back_button.bind(on_release=lambda x: self.back())
-        self.add_widget(self.back_button)
+        with self.canvas.before:
+            Color(1, 1, 1, mode='hex')
+            self.rect = Rectangle(texture=Gradient.horizontal(get_color_from_hex('#7F7FD5'), get_color_from_hex('#91EAE4')),
+                                  # source='images/ai.jpg',
+                                  size=Window.size)
+        Window.bind(on_resize=self.resize)
+        self.md_bg_color = [0, 0, 0, 0]
+        self.username = "Eternity"
 
-        self.registration_form = MDCard(orientation='vertical', size_hint=(
-            0.35, 0.55), pos_hint={'center_x': 0.5, 'center_y': 0.5}, spacing="12dp", padding=[20, 30, 20, 30])
+        # self.layout = MDBoxLayout(orientation='vertical', pos_hint={'top': 1})
+        # self.add_widget(self.layout)
 
-        self.text = MDLabel(text="[font=cracky]Registration[/font]",
-                            halign='center', font_style="H1", bold=True, font_family="fonts/CurlzMT.ttf", markup=True)
-        self.username = MDTextField(
-            hint_text="Username", mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='account')
-        self.email = MDTextField(
-            hint_text='Email', mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='email')
-        self.phone = MDTextField(
-            hint_text='Phone', mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='phone')
-        self.password = MDTextField(hint_text='Password', password=True,
-                                    helper_text="Passwords doesnt match", helper_text_mode="on_error", mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='key')
-        self.conf_pass = MDTextField(hint_text='Confirm Password', password=True,
-                                     helper_text="Passwords doesnt match", helper_text_mode="on_error", mode='rectangle', size_hint_x=0.65, pos_hint={'center_x': 0.5}, icon_left='key')
-        self.registration_form.add_widget(self.text)
-        self.registration_form.add_widget(self.username)
-        self.registration_form.add_widget(self.email)
-        self.registration_form.add_widget(self.phone)
-        self.registration_form.add_widget(self.password)
-        self.registration_form.add_widget(self.conf_pass)
+        self.img = Image(source='images/Chorduce icon.png',
+                         size_hint=(0.1, 0.1), pos_hint={'center_x': 0.5, 'center_y': 0.95})
+        self.add_widget(self.img)
 
-        # Create a register button
-        self.register_button = MDRectangleFlatButton(
-            text='Create Account', pos_hint={'center_x': 0.5})
-        # self.register_button.bind(on_release=self.register)
-        self.registration_form.add_widget(self.register_button)
+        self.animation1 = Animation(size_hint=(
+            0.5, 0.5), duration=5.0, transition='in_out_bounce', pos_hint={'center_x': 0.5, 'center_y': 0.5}) + Animation(size_hint=(0.3, 0.3), duration=2, pos_hint={
+                'center_x': 0.5, 'center_y': 0.55}, transition='out_quad')
+        self.animation1.bind(
+            on_complete=self.loading)
+        self.animation1.start(self.img)
 
-        # Add the registration form to the screen
-        self.add_widget(self.registration_form)
+    def loading(self, anim, widget):
+        self.spinner = MDSpinner(size_hint=(0.025, 0.025), pos_hint={'center_x': 0.5, 'center_y': 0.3}, palette=[
+            [0.28627450980392155, 0.8431372549019608, 0.596078431372549, 1],
+            [0.3568627450980392, 0.3215686274509804, 0.8666666666666667, 1],
+            [0.8862745098039215, 0.36470588235294116, 0.592156862745098, 1],
+            [0.8784313725490196, 0.9058823529411765, 0.40784313725490196, 1],
+        ])
+        self.animation2 = Animation(size_hint=(
+            0.32, 0.32), duration=1)+Animation(size_hint=(0.3, 0.3), duration=1)
+        self.animation2.repeat = True
+        self.animation2.start(self.img)
+        part = self.times_of_day(dt.now().hour)
+        self.add_widget(self.spinner)
+
+        self.label = MDLabel(text=f"[font=mercy]Good {part}, {self.username}[/font]", pos_hint={
+                             'center_x': 0.5, 'center_y': 0.84}, bold=True, font_style='H1', halign='center', italic=True, markup=True, size_hint=(3, 3))
+        self.add_widget(self.label)
+
+    def times_of_day(self, h):
+        return (
+            "Morning"
+            if 1 <= h < 12
+            else "Afternoon"
+            if 12 <= h < 17
+            else "Evening"
+        )
+
+    def resize(self, window, width, height):
+        self.rect.size = Window.size
 
 
 class testing(MDScreen):

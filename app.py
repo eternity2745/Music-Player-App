@@ -1,3 +1,4 @@
+from kivymd.uix.hero import MDHeroFrom, MDHeroTo
 from toastify import notify
 from winotify import Notification
 import winotify
@@ -476,6 +477,7 @@ class WelcomeScreen(MDScreen):
 class LoginScreen(MDScreen, MDFloatLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
         LabelBase.register(
             name='cracky', fn_regular='fonts/CurlzMT.ttf', fn_bold='fonts/CURLZ.ttf')
 
@@ -483,6 +485,7 @@ class LoginScreen(MDScreen, MDFloatLayout):
                                  size_hint=(0.3, 0.5),
                                  pos_hint={'center_x': 0.5, 'center_y': 0.5},
                                  elevation=5, spacing="10dp", padding="40dp", md_bg_color=[0, 0, 0, 0.8])
+        # self.hero = MDHero
         '''with self.login_form.canvas.before:
             Color(1, 1, 1, 1)
             self.rect = Rectangle(texture=Gradient.vertical(get_color_from_hex(
@@ -556,8 +559,9 @@ class LoginScreen(MDScreen, MDFloatLayout):
             print('Logged in')
             Database.jsondata(email=self.email.text,
                               password=self.password.text)
-            self.manager.add_widget(MainScreen(name='main'))
-            self.manager.current = 'main'
+            self.manager.add_widget(SplashScreen(name='splashy'))
+            # self.manager.add_widget(MainScreen(name='main'))
+            self.manager.current = 'splashy'
         else:
             self.email.error = True
             self.password.error = True
@@ -566,6 +570,66 @@ class LoginScreen(MDScreen, MDFloatLayout):
     def reg(self):
         self.manager.current = 'registration'
         self.manager.transition.direction = 'left'
+
+from datetime import datetime as dt
+class SplashScreen(MDScreen):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        LabelBase.register(name='mercy',
+                           fn_regular='fonts/Mercy Christole.ttf')
+
+        with self.canvas.before:
+            Color(1, 1, 1, mode='hex')
+            self.rect = Rectangle(texture=Gradient.horizontal(get_color_from_hex('#7F7FD5'), get_color_from_hex('#91EAE4')),
+                                  # source='images/ai.jpg',
+                                  size=Window.size)
+        Window.bind(on_resize=self.resize)
+        self.md_bg_color = [0, 0, 0, 0]
+        self.username = "Eternity"
+
+        # self.layout = MDBoxLayout(orientation='vertical', pos_hint={'top': 1})
+        # self.add_widget(self.layout)
+
+        self.img = Image(source='images/Chorduce icon.png',
+                         size_hint=(0.1, 0.1), pos_hint={'center_x': 0.5, 'center_y': 0.95})
+        self.add_widget(self.img)
+
+        self.animation1 = Animation(size_hint=(
+            0.5, 0.5), duration=5.0, transition='in_out_bounce', pos_hint={'center_x': 0.5, 'center_y': 0.5}) + Animation(size_hint=(0.3, 0.3), duration=2, pos_hint={
+                'center_x': 0.5, 'center_y': 0.55}, transition='out_quad')
+        self.animation1.bind(
+            on_complete=self.loading)
+        self.animation1.start(self.img)
+
+    def loading(self, anim, widget):
+        self.spinner = MDSpinner(size_hint=(0.025, 0.025), pos_hint={'center_x': 0.5, 'center_y': 0.3}, palette=[
+            [0.28627450980392155, 0.8431372549019608, 0.596078431372549, 1],
+            [0.3568627450980392, 0.3215686274509804, 0.8666666666666667, 1],
+            [0.8862745098039215, 0.36470588235294116, 0.592156862745098, 1],
+            [0.8784313725490196, 0.9058823529411765, 0.40784313725490196, 1],
+        ])
+        self.animation2 = Animation(size_hint=(
+            0.32, 0.32), duration=1)+Animation(size_hint=(0.3, 0.3), duration=1)
+        self.animation2.repeat = True
+        self.animation2.start(self.img)
+        part = self.times_of_day(dt.now().hour)
+        self.add_widget(self.spinner)
+
+        self.label = MDLabel(text=f"[font=mercy]Good {part}, {self.username}[/font]", pos_hint={
+                             'center_x': 0.5, 'center_y': 0.84}, bold=True, font_style='H1', halign='center', italic=True, markup=True, size_hint=(3, 3))
+        self.add_widget(self.label)
+
+    def times_of_day(self, h):
+        return (
+            "Morning"
+            if 1 <= h < 12
+            else "Afternoon"
+            if 12 <= h < 17
+            else "Evening"
+        )
+
+    def resize(self, window, width, height):
+        self.rect.size = Window.size
 
 
 os.environ['OPENAI_API_KEY'] = "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"
