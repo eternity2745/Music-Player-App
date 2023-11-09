@@ -1,3 +1,4 @@
+from datetime import datetime as dt
 from kivymd.uix.hero import MDHeroFrom, MDHeroTo
 from toastify import notify
 from winotify import Notification
@@ -571,7 +572,7 @@ class LoginScreen(MDScreen, MDFloatLayout):
         self.manager.current = 'registration'
         self.manager.transition.direction = 'left'
 
-from datetime import datetime as dt
+
 class SplashScreen(MDScreen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -610,14 +611,33 @@ class SplashScreen(MDScreen):
         ])
         self.animation2 = Animation(size_hint=(
             0.32, 0.32), duration=1)+Animation(size_hint=(0.3, 0.3), duration=1)
-        self.animation2.repeat = True
-        self.animation2.start(self.img)
+        '''self.animation2.repeat = True
+        self.animation2.start(self.img)'''
         part = self.times_of_day(dt.now().hour)
         self.add_widget(self.spinner)
+        self.spinner.active = False
+        Thread(name='splash_screen', target = lambda x: self.animations, daemon = True).start()
 
         self.label = MDLabel(text=f"[font=mercy]Good {part}, {self.username}[/font]", pos_hint={
                              'center_x': 0.5, 'center_y': 0.84}, bold=True, font_style='H1', halign='center', italic=True, markup=True, size_hint=(3, 3))
         self.add_widget(self.label)
+        Clock.schedule_once(self.add_screens)
+
+    def animations(self):
+         self.animation2.repeat = True
+         self.animation2.start(self.img)
+         self.spinner.active = True
+
+    def add_screens(self, dt):
+        self.manager.add_widget(MainScreen(name='main'))
+        self.manager.add_widget(Playlist(name='playlist'))
+        self.manager.add_widget(Playlist_Songs(name='playlist_songs'))
+        self.manager.add_widget(UserProfile(name='profile'))
+        self.manager.add_widget(Settings(name='settings'))
+
+        self.animation2.stop(self.img)
+        self.spinner.active = False
+        self.manager.current = 'main'
 
     def times_of_day(self, h):
         return (
@@ -920,24 +940,14 @@ class MainScreen(MDScreen):
         self.nav_playlist.bind(on_release=self.to_playlist,
                                on_enter=self.enter, on_leave=self.leave)
 
-        self.nav_text_art = MDNavigationDrawerItem(
-            text='AI Text Art', icon="image-text", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
-        self.nav_text_art.bind(on_release=self.to_textart,
-                               on_enter=self.enter, on_leave=self.leave)
-        self.nav_menu.add_widget(self.nav_text_art)
+        self.nav_divider = MDNavigationDrawerDivider()
+        self.nav_menu.add_widget(self.nav_divider)
 
         self.chatbot = MDNavigationDrawerItem(
             text='Jaadhu', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
         self.nav_menu.add_widget(self.chatbot)
         self.chatbot.bind(on_release=self.to_chat,
                           on_enter=self.enter, on_leave=self.leave)
-
-        self.nav_divider = MDNavigationDrawerDivider()
-        self.nav_menu.add_widget(self.nav_divider)
-
-        self.nav_settings = MDNavigationDrawerItem(
-            text='Enikkariyilla', icon="incognito", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
-        self.nav_menu.add_widget(self.nav_settings)
 
         self.nav_settings = MDNavigationDrawerItem(
             text='Settings', icon="tools", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF", on_release=self.to_settings)
@@ -976,7 +986,7 @@ class MainScreen(MDScreen):
                         target=self.mic_ask, daemon=True).start()
                 ),
                 md_bg_color=(1, 0, 0, 0),
-                pos_hint={'top': 0.92, 'center_x': 0.05},
+                pos_hint={'top': 0.92, 'center_x': 0.02},
                 size_hint=(0.105, 5),
                 padding=[0, 25, 0, 70],
                 spacing="390dp"
@@ -1125,13 +1135,8 @@ class MainScreen(MDScreen):
             self.manager.get_screen("musicplayer").sound.length)
 
     def search(self):
-        print(1339013190)
-        # self.manager.add_widget(SearchScreen(name='search'))
         self.manager.current = 'search'
         self.manager.transition.direction = 'left'
-
-    def se(self, instance):
-        pass
 
     def on_pre_enter(self):
         self.counter += 1
@@ -1299,11 +1304,6 @@ class MainScreen(MDScreen):
 
     def mic_ask(self):
         self.recognizer = speech_recognition.Recognizer()
-        '''self.speaker = pyttsx3.init()
-        self.speaker.setProperty("rate", 150)'''
-        # self.speaker.say("Hey what's up")
-        # self.speaker.runAndWait()
-        # tts = talkey.Talkey()
         try:
             print(0)
             with speech_recognition.Microphone() as mic:
@@ -1424,56 +1424,6 @@ class RegistrationScreen(MDScreen):
         else:
             self.password.error = True
             self.conf_pass.error = True
-
-
-class AITextArtScreen(MDScreen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.running = False
-        self.back_button = MDIconButton(
-            icon='chevron-left', pos_hint={'top': 1, 'left': 1})
-        self.back_button.bind(on_press=self.go_back)
-        self.add_widget(self.back_button)
-        self.layout = MDBoxLayout(orientation='vertical')
-        self.text_input = MDTextField(mode='round',
-                                      multiline=False, size_hint_y=None, height=50, hint_text='Enter text here')
-        self.submit_button = MDRectangleFlatButton(
-            text='Submit', size_hint_y=None, height=50)
-        if self.running == False:
-            self.submit_button.bind(on_press=self.generate_image)
-        else:
-            return
-        self.image_space = AsyncImage(
-            source="images/gm.png", opacity=0.5, pos_hint={'center_x': 0.5, 'center_y': 0.5})
-        self.layout.add_widget(self.image_space)
-        self.layout.add_widget(self.text_input)
-        self.layout.add_widget(self.submit_button)
-        self.add_widget(self.layout)
-
-    def generate_image(self, instance):
-        API_TOKEN = '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'
-        API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
-        headers = {"Authorization": f"Bearer {API_TOKEN}"}
-        self.running = True
-        text = self.text_input.text
-        if text == '':
-            return
-        self.image_space.source = 'images/gi.png'
-
-        response = requests.post(API_URL, headers=headers, json={
-            "inputs": text,
-        })
-
-        image = Im.open(BytesIO(response.content))
-        image.save('generated_image.png')
-
-        self.image_space.source = 'generated_image.png'
-        self.image_space.size_hint = (0.3, 0.3)
-        self.image_space.opacity = 1
-        self.running = False
-
-    def go_back(self, dt):
-        self.manager.current = 'main'
 
 
 class MusicPlayer(MDScreen):
@@ -4300,18 +4250,12 @@ class spotify(MDApp):
         sm = MDScreenManager()
         # sm.add_widget(Welcome(name='welcome'))
 
-        sm.add_widget(WelcomeScreen(name=''))
         sm.add_widget(LoginScreen(name='login'))
         sm.add_widget(RegistrationScreen(name='registration'))
-        sm.add_widget(AITextArtScreen(name='aiart'))
         sm.add_widget(MusicPlayer(name='musicplayer'))
-        sm.add_widget(SearchScreen(name='search'))
-        sm.add_widget(Playlist(name='playlist'))
-        sm.add_widget(Playlist_Songs(name='playlist_songs'))
-        sm.add_widget(ChatUI(name='chat'))
-        sm.add_widget(UserProfile(name='profile'))
-        sm.add_widget(Settings(name='settings'))
         sm.add_widget(Lyrics(name='lyrics'))
+        sm.add_widget(ChatUI(name='chat'))
+        sm.add_widget(ChatUI(name='chat'))
         # Thread(target=self.hello, name="Voice Assistant")
         return sm
 
