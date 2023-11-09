@@ -457,7 +457,7 @@ class SplashScreen(MDScreen):
                                   size=Window.size)
         Window.bind(on_resize=self.resize)
         self.md_bg_color = [0, 0, 0, 0]
-        self.username = "Eternity"
+        self.username = Database.acc_details()[0]
 
         self.img = Image(source='images/Chorduce icon.png',
                          size_hint=(0.1, 0.1), pos_hint={'center_x': 0.5, 'center_y': 0.95})
@@ -482,18 +482,14 @@ class SplashScreen(MDScreen):
         part = self.times_of_day(dt.now().hour)
         self.add_widget(self.spinner)
         self.spinner.active = False
-        Thread(name='splash_screen',
-               target=lambda x: self.animations, daemon=True).start()
+        self.animation2.repeat = True
+        self.animation2.start(self.img)
+        self.spinner.active = True
 
         self.label = MDLabel(text=f"[font=mercy]Good {part}, {self.username}[/font]", pos_hint={
                              'center_x': 0.5, 'center_y': 0.84}, bold=True, font_style='H1', halign='center', italic=True, markup=True, size_hint=(3, 3))
         self.add_widget(self.label)
         Clock.schedule_once(self.add_screens)
-
-    def animations(self):
-        self.animation2.repeat = True
-        self.animation2.start(self.img)
-        self.spinner.active = True
 
     def add_screens(self, dt):
         self.manager.add_widget(MainScreen(name='main'))
@@ -1680,8 +1676,6 @@ class SearchScreen(MDScreen):
 
         self.new_songs = Clock.create_trigger(self.new)
 
-        self.songs = Database.music(limit=27)
-
         self.back = MDIconButton(
             icon='chevron-left', pos_hint={'top': 1, 'left': 0.7})
 
@@ -1698,12 +1692,6 @@ class SearchScreen(MDScreen):
 
         self.list = MDList(size_hint_x=0.9)
         self.scroll.add_widget(self.list)
-
-        for i in self.songs:
-            self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(
-                id=f"{i[0]},{i[1]}", icon='dots-vertical', on_press=self.dropdown), ImageLeftWidget(source=i[3]), text=i[1], secondary_text=i[2])
-            self.list.add_widget(self.sugg_songs)
-            self.sugg_songs.bind(on_release=self.musicplayer)
 
         self.top_bar = MDTopAppBar(left_action_items=[['chevron-left', lambda x: self.go_back()],],
                                    title="Music Player",
@@ -1814,6 +1802,12 @@ class SearchScreen(MDScreen):
     def on_pre_enter(self):
         self.account = Database.acc_details()[0]
         self.plays = Database.playlists_info(username=self.account)
+        self.songs = Database.music(limit=15)
+        for i in self.songs:
+            self.sugg_songs = TwoLineAvatarIconListItem(IconRightWidget(
+                id=f"{i[0]},{i[1]}", icon='dots-vertical', on_press=self.dropdown), ImageLeftWidget(source=i[3]), text=i[1], secondary_text=i[2])
+            self.list.add_widget(self.sugg_songs)
+            self.sugg_songs.bind(on_release=self.musicplayer)
 
     def updating(self, instance, value):
         self.search_text = self.search_bar.text
@@ -2049,6 +2043,16 @@ class Playlist(MDScreen):
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
+    def colour_extractor(self, path):
+        color_thief = ColorThief(path)
+        palette = color_thief.get_palette(color_count=2)
+        l = []
+
+        for i in palette:
+            l.append(self.rgb_to_hex(i))
+
+        return l
+
     def play_details(self, dt):
         self.main = MDBoxLayout(orientation="horizontal",
                                 spacing="12dp",
@@ -2099,10 +2103,11 @@ class Playlist(MDScreen):
         if self.play_n.text != '' and self.upload.state == 'normal' and len(self.play_n.text) <= 30:
             today = date.today()
             t = today.strftime("%d/%m/%Y")
+            # colours = self.colour_extractor(path=self.upload.background_normal)
             Database.create_playlist(
                 name=self.play_n.text, image=(
                     self.upload.background_normal if self.upload.background_normal != 'images/upload.png' else 'images/no img.png'),
-                user=self.username, date=t
+                user=self.username, date=t,  # colours =
             )
 
             self.playlists = Database.playlists_info(username=self.username)
@@ -2384,7 +2389,7 @@ class Playlist_Songs(MDScreen):
                 MDNavigationRailItem(
                     text="HOME",
                     icon="home",
-                    on_press=self.to_main,
+                    on_press=lambda x: self.to_main,
                 ),
                 MDNavigationRailItem(
                     text="MUSIC",
@@ -2476,14 +2481,23 @@ class Playlist_Songs(MDScreen):
         return '#%02x%02x%02x' % rgb
 
     def colour_extractor(self, path):
-        color_thief = ColorThief(path)
-        palette = color_thief.get_palette(color_count=2)
-        l = []
+        try:
+            color_thief = ColorThief(path)
+            palette = color_thief.get_palette(color_count=2)
+            l = []
 
-        for i in palette:
-            l.append(self.rgb_to_hex(i))
+            for i in palette:
+                l.append(self.rgb_to_hex(i))
 
-        return l
+            return l
+        except:
+            palette = [(0, 0, 0), (0, 0, 124), (0, 0, 248)]
+            l = []
+
+            for i in palette:
+                l.append(self.rgb_to_hex(i))
+
+            return l
 
     def confirm_playlist_deletion(self, dt):
         self.main = MDBoxLayout(orientation="vertical",
@@ -2773,12 +2787,9 @@ class ChatUI(MDScreen):
         self.change = False
 
         with self.canvas.before:
-            self.rect = Rectangle(texture=Gradient.vertical(get_color_from_hex('#EBC7E6'),
+            self.rect = Rectangle(texture=Gradient.vertical(get_color_from_hex('#1d2671'),
                                                             get_color_from_hex(
-                                                                '#BFACE2'),
-                                                            get_color_from_hex(
-                                                                '#A084DC'),
-                                                            get_color_from_hex('#645CBB')), size=Window.size)
+                                                                '#c33764')), size=Window.size)
             Window.bind(on_resize=self.resize)
 
         self.back_button = MDIconButton(
@@ -2832,15 +2843,17 @@ class ChatUI(MDScreen):
 
         self.text_input = MDTextField(
             mode='fill', hint_text="Send a message", pos_hint={
-                'center_x': 0.5, 'top': 0.1}, size_hint=(None, None), size=(1700, 400), multiline=True, radius=(30, 30, 30, 30))
+                'center_x': 0.5, 'top': 0.1}, size_hint=(None, None), size=(1550, 400), multiline=True, radius=(30, 30, 30, 30), max_height='500dp')
         self.add_widget(self.text_input)
-        self.text_input.add_widget(ScrollView())
         self.list.append(self.text_input.pos)
 
         self.send_button = MDIconButton(icon='send', md_bg_color="blue", pos_hint={
             'center_x': 0.93, 'top': 0.10})
         self.send_button.bind(on_press=self.send_user_message)
         self.add_widget(self.send_button)
+
+    def on_pre_enter(self):
+        self.account = Database.acc_details()
 
     def go_back(self, dt):
         self.manager.current = 'main'
@@ -2858,7 +2871,7 @@ class ChatUI(MDScreen):
             orientation='horizontal', size_hint=(None, None), adaptive_height=True, spacing="50px", width="1800dp"
         )
         self.sub_layout.add_widget(self.sub_layout4)
-        self.upload2 = Button(background_normal='images/no img.png',
+        self.upload2 = Button(background_normal=self.account[4],
                               size_hint=(None, None), background_down='images/loading.png', valign='top', border=(0, 0, 0, 0), pos_hint={'top': 0.7})
         self.sub_layout4.add_widget(self.upload2)
 
