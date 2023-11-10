@@ -1,3 +1,4 @@
+import time
 from datetime import datetime as dt
 from toastify import notify
 import json
@@ -375,8 +376,6 @@ class LoginScreen(MDScreen, MDFloatLayout):  # Initialising Login Screen
         status = Database.login(email=self.email.text,
                                 password=self.password.text)
         if status:
-            Database.jsondata(email=self.email.text,
-                              password=self.password.text)
             self.manager.add_widget(SplashScreen(name='splashy'))
             self.manager.current = 'splashy'
         else:
@@ -388,7 +387,7 @@ class LoginScreen(MDScreen, MDFloatLayout):  # Initialising Login Screen
         self.manager.transition.direction = 'left'
 
 
-class RegistrationScreen(MDScreen):  # Initialize Registration Screen
+class RegistrationScreen(MDScreen):  # Initialising Registration Screen
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -442,7 +441,7 @@ class RegistrationScreen(MDScreen):  # Initialize Registration Screen
             self.conf_pass.error = True
 
 
-class SplashScreen(MDScreen):  # Initializing Splash Screen
+class SplashScreen(MDScreen):  # Initialising Splash Screen
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         LabelBase.register(name='mercy',
@@ -512,7 +511,7 @@ class SplashScreen(MDScreen):  # Initializing Splash Screen
         self.rect.size = Window.size
 
 
-class MainScreen(MDScreen):
+class MainScreen(MDScreen):  # Initialising the MainScreen
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.bass = False
@@ -588,6 +587,7 @@ class MainScreen(MDScreen):
         self.main_layout.add_widget(self.false_label)
         self.main_layout.add_widget(self.false_section)
 
+        # fetching music from database
         s1 = Database.music(limit=8)
         s2 = Database.music(limit=8, lang='malayalam')
         s3 = Database.music(limit=8, lang='english')
@@ -814,15 +814,15 @@ class MainScreen(MDScreen):
         )
         self.add_widget(self.nav_layout)
 
-    def go_to_lyrics(self, dt):
+    def go_to_lyrics(self, dt):  # Function to change to lyrics screen
         self.manager.current = 'lyrics'
         self.manager.transition.direction = 'up'
 
-    def to_main(self, dt):
+    def to_main(self, dt):  # Function to change to main screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'left'
 
-    def to_player(self, instance):
+    def to_player(self, instance):  # Function to change to musicplayer screen
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
             self.manager.get_screen('musicplayer').prev_screen = 'main'
@@ -831,38 +831,34 @@ class MainScreen(MDScreen):
         except:
             pass
 
-    def to_chat(self, dt):
+    def to_chat(self, dt):  # Function to change to chat screen
         self.nav_drawer.set_state("close")
         self.manager.current = 'chat'
         self.manager.transition.direction = 'left'
 
-    def enter(self, instance):
+    def enter(self, instance):  # Function to change cursor icon when it is in focus with widget and increase its elevation
         Window.set_system_cursor(cursor_name='hand')
         instance.elevation = 3
 
-    def leave(self, instance):
+    def leave(self, instance):  # Function to change cursor icon when it is out of focus with widget and increase its elevation
         Window.set_system_cursor(cursor_name='arrow')
         instance.elevation = 0
 
+    # Function to resize bacgkround gradient colour w.r.t change in screen size
     def resize(self, window, width, height):
         self.rect.size = Window.size
 
-    def logout(self, dt):
+    def logout(self, dt):  # Function to logout
         self.manager.remove_widget(MainScreen(name='main'))
         self.manager.current = 'login'
         self.manager.transition.direction = 'left'
 
-    def to_textart(self, dt):
-        self.nav_drawer.set_state('close')
-        self.manager.current = 'aiart'
-        self.manager.transition.direction = 'left'
-
-    def to_playlist(self, dt):
+    def to_playlist(self, dt):  # Functiom to change to playlist screen
         self.nav_drawer.set_state('close')
         self.manager.current = 'playlist'
         self.manager.transition.direction = 'left'
 
-    def song(self, instance):
+    def song(self, instance):  # Function to change to musicplayer screen
         self.song_name = instance.children[1].text
         self.manager.get_screen("musicplayer").playlist = False
         self.manager.get_screen('musicplayer').playlist_songs = None
@@ -876,7 +872,7 @@ class MainScreen(MDScreen):
         self.manager.current = 'musicplayer'
         self.manager.transition.direction = 'left'
 
-    def next(self, dt):
+    def next(self, dt):  # Function to play next song
         self.manager.get_screen("musicplayer").prev_button.disabled = False
         self.skip_prev.disabled = False
         self.manager.get_screen("musicplayer").clicked = False
@@ -886,7 +882,7 @@ class MainScreen(MDScreen):
         self.manager.get_screen("musicplayer").slider.value = 0
         self.manager.get_screen("musicplayer").sound.stop()
 
-    def previous(self, dt):
+    def previous(self, dt):  # Function to play previous song
         self.manager.get_screen("musicplayer").clicked = False
         self.manager.get_screen("musicplayer").prev = True
         self.manager.get_screen("musicplayer").new = True
@@ -947,11 +943,11 @@ class MainScreen(MDScreen):
         self.end.text = self.manager.get_screen("musicplayer").convert_seconds_to_min(
             self.manager.get_screen("musicplayer").sound.length)
 
-    def search(self):
+    def search(self):  # Function to change to search screen
         self.manager.current = 'search'
         self.manager.transition.direction = 'left'
 
-    def on_pre_enter(self):
+    def on_pre_enter(self):  # Function called just before entering the screen
         self.counter += 1
         l = [1, 15, 35, 50, 75, 100]
         self.account = Database.acc_details()
@@ -997,7 +993,7 @@ class MainScreen(MDScreen):
             Clock.schedule_interval(self.update_slider, 1)
             Clock.schedule_interval(self.update_time, 1)
 
-    def booster(self):
+    def booster(self):  # Function to boost song base
         if self.sound and self.switch.theme_icon_color != "Custom":
             self.switch.icon_color = [0, 0.5, 1, 1]
             self.switch.theme_icon_color = "Custom"
@@ -1017,32 +1013,35 @@ class MainScreen(MDScreen):
             self.switch.theme_icon_color = "Primary"
             self.bass_event()
 
+    # Function to confirm play of bass-boosted version of song
     def bass_confirmation(self, dt):
         if self.bass == True:
             toast(text="Bass enabled for the current song!", duration=5)
         else:
             toast(text="Bass disabled", duration=5)
 
-    def update_slider(self, dt):
+    def update_slider(self, dt):  # Function to update slider position w.r.t song
         self.slider.value = (self.sound.get_pos() / self.sound.length) * 100
 
-    def update_time(self, dt):
+    def update_time(self, dt):  # Function to update time w.r.t song
         total_seconds = int(self.sound.get_pos())
         current_minute = total_seconds // 60
         current_seconds = total_seconds - current_minute * 60
         current_time = f"{current_minute:02}:{current_seconds:02}"
         self.start.text = current_time
 
+    # Function to move slider position and seek song to the position of slider
     def touch_up(self, touch, widget):
         if widget.pos[1] < 50:
             if self.sound:
                 self.sound.seek((self.slider.value/100)*self.sound.length)
 
+    # Function to convert seconds to minute
     def convert_seconds_to_min(self, sec):
         val = str(datetime.timedelta(seconds=sec)).split(':')
         return f'{val[1]}:{val[2].split(".")[0]}'
 
-    def playpause(self, dt):
+    def playpause(self, dt):  # Function to play/pause song
         global current_pos
         if self.sound.state == 'play':
             self.paused = True
@@ -1064,7 +1063,7 @@ class MainScreen(MDScreen):
                     self.sound.seek(current_pos)
                     self.manager.get_screen('musicplayer').paused = False
 
-    def song_repeat(self, dt):
+    def song_repeat(self, dt):  # Function to enable song repeat mode
         if self.sound and self.repeat.icon == 'repeat-off':
             self.repeat.icon = 'repeat'
             self.repeat.icon_color = [0, 0.5, 1, 1]
@@ -1077,7 +1076,7 @@ class MainScreen(MDScreen):
             self.sound.loop = False
             toast(text="Loop disabled", duration=5)
 
-    def mute_func(self, dt):
+    def mute_func(self, dt):  # Function to mute/Change volume of song
         if self.sound and self.mute.icon == 'volume-high':
             self.mute.icon = 'volume-variant-off'
             self.mute.theme_icon_color = "Primary"
@@ -1100,11 +1099,7 @@ class MainScreen(MDScreen):
             self.mute.theme_icon_color = "Custom"
             self.sound.volume = 1
 
-    def check(self):
-        if self.song_name != self.prev_sn:
-            Clock.schedule_once(self.on_pre_enter)
-
-    def mic_ask(self):
+    def mic_ask(self):  # Function to enable the assistant speech engine
         self.recognizer = speech_recognition.Recognizer()
         try:
             with speech_recognition.Microphone() as mic:
@@ -1125,21 +1120,23 @@ class MainScreen(MDScreen):
         except Exception as e:
             print(e)
 
-    def to_profile(self, dt):
+    def to_profile(self, dt):  # Function to change to user account screen
         self.manager.get_screen('profile').acc_details = self.account
         self.manager.current = 'profile'
         self.manager.transition.direction = 'left'
 
-    def to_settings(self, dt):
+    def to_settings(self, dt):  # Function to change to settings screen
         self.manager.current = 'settings'
         self.manager.transition.direction = 'left'
 
+    # Function to get song recommendation based on user's listening history
     def ai_recommendation(self):
         self.recs_details = Database.recommendations(username=self.account[0])
         if self.recs_details != []:
             self.new_recs = True
             self.update_recs()
 
+    # Function to update the recommended section with the new recommended songs
     def recommendation_updated(self, dt):
         self.recommended_section.clear_widgets()
 
@@ -1159,7 +1156,7 @@ class MainScreen(MDScreen):
         self.new_recs = False
 
 
-class MusicPlayer(MDScreen):
+class MusicPlayer(MDScreen):  # Initialising the music player screen
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.clicked = False
@@ -1190,7 +1187,7 @@ class MusicPlayer(MDScreen):
         self.queue_counter = 0
         self.music_icon_clicked = False
 
-    def on_pre_enter(self, *args):
+    def on_pre_enter(self, *args):  # Function called just before entering the screen
         self.song = Database.get_song_detail(name=self.song_name)
 
         if self.finished == True and self.counter == 0:
@@ -1264,6 +1261,8 @@ class MusicPlayer(MDScreen):
             if self.playlist_started == False:
                 self.played_songs.append(self.song)
 
+            Window.set_title(f"Chorduce - {self.song_title.text}")
+
             Thread(
                 name='lyrics', target=self.get_lyrics, daemon=True).start()
 
@@ -1309,6 +1308,7 @@ class MusicPlayer(MDScreen):
             Clock.schedule_interval(self.update_time, 1)
             self.clicked = False
             self.manager.get_screen('main').lyrics.disabled = True
+            Window.set_title(f"Chorduce - {self.song_title.text}")
             Thread(
                 name='lyrics', target=self.get_lyrics, daemon=True).start()
 
@@ -1318,11 +1318,12 @@ class MusicPlayer(MDScreen):
             Clock.schedule_interval(self.update_slider, 1)
             Clock.schedule_interval(self.update_time, 1)
 
+    # Function to convert seconds to minute
     def convert_seconds_to_min(self, sec):
         val = str(datetime.timedelta(seconds=sec)).split(':')
         return f'{val[1]}:{val[2].split(".")[0]}'
 
-    def play_pause(self, dt):
+    def play_pause(self, dt):  # Function to play/pause song
         global current_pos
         if self.sound.state == 'play':
             self.paused = True
@@ -1343,7 +1344,7 @@ class MusicPlayer(MDScreen):
                     self.sound.seek(current_pos)
                     self.paused = False
 
-    def next(self, dt):
+    def next(self, dt):  # Function to play next song
         self.prev_button.disabled = False
         self.manager.get_screen("main").skip_prev.disabled = False
         self.clicked = False
@@ -1353,7 +1354,7 @@ class MusicPlayer(MDScreen):
         self.slider.value = 0
         self.sound.stop()
 
-    def previous(self, dt):
+    def previous(self, dt):  # Function to play previous song
         self.clicked = False
         self.prev = True
         self.new = True
@@ -1400,7 +1401,9 @@ class MusicPlayer(MDScreen):
             "main").end.text = self.convert_seconds_to_min(self.sound.length)
         MainScreen.on_pre_enter
 
-    def on_stop(self, dt):
+        Window.set_title(f"Chorduce - {self.song_title.text}")
+
+    def on_stop(self, dt):  # Function called when the song stops
         if self.manager.get_screen("main").bass == True:
             self.manager.get_screen(
                 "main").switch.theme_icon_color = "Primary"
@@ -1464,8 +1467,6 @@ class MusicPlayer(MDScreen):
             if self.queue != False:
                 if len(self.queue_songs) != 0:
 
-                    reference = self.queue_songs[0]
-
                     if self.index != -1 and self.queue_counter == 0:
                         self.played_songs.insert(
                             self.index+1, self.queue_songs[0])
@@ -1473,7 +1474,7 @@ class MusicPlayer(MDScreen):
                         self.played_songs.append(self.queue_songs[0])
 
                     elif self.queue_counter > 0:
-                        n = self.played_songs.index(reference)
+                        n = self.played_songs.index(self.reference)
                         self.played_songs.insert(n+1, self.queue_songs[0])
 
                     self.queue_counter += 1
@@ -1497,13 +1498,14 @@ class MusicPlayer(MDScreen):
 
                     Clock.schedule_interval(self.update_slider, 1)
                     Clock.schedule_interval(self.update_time, 1)
+                    self.reference = self.queue_songs[0]
                     self.queue_songs.pop(0)
                     if len(self.queue_songs) == 0:
                         self.queue_songs = []
                         self.queue = False
                         self.queue_counter = 0
                         self.index = -(len(self.played_songs) -
-                                       self.played_songs.index(reference)) + 1
+                                       self.played_songs.index(self.reference)) + 1
                         if self.index == 0:
                             self.index = -1
 
@@ -1567,21 +1569,21 @@ class MusicPlayer(MDScreen):
                 'main').mute.icon
             self.manager.get_screen('main').sound.volume = vol[self.m_icon]
 
-    def update_slider(self, dt):
+    def update_slider(self, dt):  # Function to update slider position w.r.t song
         self.slider.value = (self.sound.get_pos() / self.sound.length) * 100
 
-    def update_time(self, dt):
+    def update_time(self, dt):  # Function to Update time w.r.t to song
         total_seconds = int(self.sound.get_pos())
         current_minute = total_seconds // 60
         current_seconds = total_seconds - (current_minute * 60)
         current_time = f"{current_minute:02}:{current_seconds:02}"
         self.start_time.text = current_time
 
-    def touch_down(self, *args):
+    def touch_down(self, *args):  # Function to seek song based on slider position
         if self.sound:
             self.sound.seek((self.slider.value/100)*self.sound.length)
 
-    def get_lyrics(self):
+    def get_lyrics(self):  # Function to get lyrics of current song ( if available )
         if self.sound:
             genius = lyricsgenius.Genius('IGWgsLHybP3wO96mxe-sH-TUiTNOEKXB8SS1udS4TMuk_ovQUJ74-IkGc9s-1EkhZ5MfsjL5sfc-8ih_SqAmYA',
                                          skip_non_songs=True, excluded_terms=["(Remix)", "(Live)"],
@@ -1629,11 +1631,12 @@ class MusicPlayer(MDScreen):
                 Clock.schedule_once(self.set_lyrics_height)
                 self.manager.get_screen('main').lyrics.disabled = True
 
+    # Function to set the height of label widget in lyrics screen
     def set_lyrics_height(self, dt):
         self.manager.get_screen('lyrics').label.height = self.manager.get_screen(
             'lyrics').label.texture_size[1]
 
-    def go_back(self, dt):
+    def go_back(self, dt):  # Function to go back to the previous screen
         self.manager.get_screen("main").sound = self.sound
         self.manager.get_screen("main").paused = self.paused
         self.manager.get_screen("main").song_name = self.song_title.text
@@ -1643,13 +1646,13 @@ class MusicPlayer(MDScreen):
         self.manager.transition.direction = 'right'
 
 
-class BassBoost():
+class BassBoost():  # Initializing bassboost class
     global attenuate_db
     global accentuate_db
     attenuate_db = -10
     accentuate_db = 10
 
-    def bass_line_freq(track):
+    def bass_line_freq(track):  # Function to find the bass factor
         sample_track = list(track)
 
         est_mean = np.mean(sample_track)
@@ -1660,7 +1663,7 @@ class BassBoost():
 
         return bass_factor
 
-    def audio(path):
+    def audio(path):  # Function to apply bass to the song
         sample = AudioSegment.from_mp3(path)
         filtered = sample.low_pass_filter(
             BassBoost.bass_line_freq(sample.get_array_of_samples()))
@@ -1670,7 +1673,7 @@ class BassBoost():
                         path[20:].replace(".mp3", "") + "-boosted.mp3", format="mp3")
 
 
-class SearchScreen(MDScreen):
+class SearchScreen(MDScreen):  # Initialising the SearchScreen
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.song_id = None
@@ -1768,11 +1771,11 @@ class SearchScreen(MDScreen):
         )
         self.add_widget(self.nav_layout)
 
-    def to_main(self, dt):
+    def to_main(self, dt):  # Function to go to main screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
-    def to_player(self, instance):
+    def to_player(self, instance):  # Function to go to musicplayer
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
             self.manager.get_screen('musicplayer').prev_screen = 'search'
@@ -1781,26 +1784,26 @@ class SearchScreen(MDScreen):
         except:
             pass
 
-    def to_profile(self, dt):
+    def to_profile(self, dt):  # Function to go to user account screen
         self.manager.current = 'profile'
         self.manager.transition.direction = 'left'
 
-    def to_settings(self, dt):
+    def to_settings(self, dt):  # Function to go to settings screen
         self.manager.current = 'settings'
         self.manager.transition.direction = 'left'
 
-    def logout(self, dt):
+    def logout(self, dt):  # Function to logout
         pass
 
-    def to_playlist(self, dt):
+    def to_playlist(self, dt):  # Function to change to playlist screen
         self.manager.current = 'playlist'
         self.manager.transition.direction = 'left'
 
-    def to_chat(self, dt):
+    def to_chat(self, dt):  # Function to change to chat screen
         self.manager.current = 'chat'
         self.manager.transition.direction = 'left'
 
-    def on_pre_enter(self):
+    def on_pre_enter(self):  # Function called just before entering the screen
         self.account = Database.acc_details()[0]
         self.plays = Database.playlists_info(username=self.account)
         self.songs = Database.music(limit=15)
@@ -1810,10 +1813,11 @@ class SearchScreen(MDScreen):
             self.list.add_widget(self.sugg_songs)
             self.sugg_songs.bind(on_release=self.musicplayer)
 
-    def updating(self, instance, value):
+    def updating(self, instance, value):  # Function called when the text in search bar is changed
         self.search_text = self.search_bar.text
-        Thread(target=self.update_list, name='search', daemon=True).start()
+        Thread(target=self.update_list(), name='search', daemon=True).start()
 
+    # Function to find the matching song and to update the filtered_items list
     def update_list(self):
 
         if self.search_text != '':
@@ -1825,7 +1829,7 @@ class SearchScreen(MDScreen):
             self.filtered_items = []
             self.new_songs()
 
-    def new(self, dt):
+    def new(self, dt):  # Function to update the widgets based on search result
         try:
             if len(self.filtered_items) > 0:
                 self.list.clear_widgets()
@@ -1836,14 +1840,14 @@ class SearchScreen(MDScreen):
                     self.sugg_songs.bind(on_release=self.musicplayer)
             else:
                 self.list.clear_widgets()
-        except:
-            self.list.clear_widgets()
+        except Exception as e:
+            raise e
 
-    def go_back(self):
+    def go_back(self):  # Function to return to previous screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
-    def musicplayer(self, instance):
+    def musicplayer(self, instance):  # Function to change to musicplayer
         self.song_name = instance.text
         self.manager.get_screen("musicplayer").song_name = self.song_name
         self.manager.get_screen('musicplayer').playlist = False
@@ -1858,6 +1862,7 @@ class SearchScreen(MDScreen):
         self.manager.current = 'musicplayer'
         self.manager.transition.direction = 'left'
 
+    # Function which shows a dropdown menu of options ('Add to queue', 'Add to playlist')
     def dropdown(self, instance):
         detail = instance.id.split(',')
         self.name_of_song = detail[1]
@@ -1880,7 +1885,7 @@ class SearchScreen(MDScreen):
             width_mult=4)
         self.menu.open()
 
-    def playlists(self):
+    def playlists(self):  # Function to open a dialog box containing a list of playlists of the user
         self.box = MDBoxLayout(
             size_hint_y=None, orientation='vertical', adaptive_height=True)
         for k in self.plays:
@@ -1896,21 +1901,21 @@ class SearchScreen(MDScreen):
         )
         self.dialog.open()
 
-    def queue(self):
+    def queue(self):  # Function to add song to the queue
         self.song_info = Database.get_song_detail(id=int(self.song_id))
         self.manager.get_screen('musicplayer').queue = True
         self.manager.get_screen(
             'musicplayer').queue_songs.append(self.song_info)
         toast(text="Song Added To Queue")
 
-    def select_playlist(self, instance):
+    def select_playlist(self, instance):  # Function to add song to the playlist
         Database.add_playlist_song(playlist_id=int(
             instance.id), song_id=int(self.song_id), song_name=self.name_of_song)
         self.dialog.dismiss()
         toast(text="Song Added To Playlist")
 
 
-class Playlist(MDScreen):
+class Playlist(MDScreen):  # Initialising the Playlist screen
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.counter = 0
@@ -2008,11 +2013,11 @@ class Playlist(MDScreen):
         )
         self.add_widget(self.nav_layout)
 
-    def to_main(self, dt):
+    def to_main(self, dt):  # Function to change to main screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
-    def to_player(self, instance):
+    def to_player(self, instance):  # Function to change to musicplayer
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
             self.manager.get_screen('musicplayer').prev_screen = 'playlist'
@@ -2021,29 +2026,30 @@ class Playlist(MDScreen):
         except:
             pass
 
-    def to_profile(self, dt):
+    def to_profile(self, dt):  # Function to change to user account screen
         self.manager.current = 'profile'
         self.manager.transition.direction = 'left'
 
-    def to_settings(self, dt):
+    def to_settings(self, dt):  # Function to change to settings screen
         self.manager.current = 'settings'
         self.manager.transition.direction = 'left'
 
-    def logout(self, dt):
+    def logout(self, dt):  # Function to logout
         pass
 
-    def to_playlist(self, dt):
+    def to_playlist(self, dt):  # Function to change to playlist screen
         self.manager.current = 'playlist'
         self.manager.transition.direction = 'left'
 
-    def to_chat(self, dt):
+    def to_chat(self, dt):  # Function to change to chat screen
         self.manager.current = 'chat'
         self.manager.transition.direction = 'left'
 
-    def go_to_main(self):
+    def go_to_main(self):  # Function to change to main screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
+    # Function to extract colour from the image of playlist
     def colour_extractor(self, path):
         try:
             color_thief = ColorThief(path)
@@ -2058,6 +2064,7 @@ class Playlist(MDScreen):
 
         return l
 
+    # Function to show dialog box and fetch the name and image of playlist
     def play_details(self, dt):
         self.main = MDBoxLayout(orientation="horizontal",
                                 spacing="12dp",
@@ -2094,17 +2101,17 @@ class Playlist(MDScreen):
 
         self.dialog.open()
 
-    def choose(self, dt):
+    def choose(self, dt):  # Function to choose image
         self.play_img = filechooser.open_file()
         try:
             self.upload.background_normal = self.play_img[0]
         except:
             toast(text="Unable to load image")
 
-    def cancel(self, dt):
+    def cancel(self, dt):  # Function to dismiss the dialog box
         self.dialog.dismiss()
 
-    def create(self, dt):
+    def create(self, dt):  # Function to create a new playlist
         if self.play_n.text != '' and self.upload.state == 'normal' and len(self.play_n.text) <= 30:
             today = date.today()
             t = today.strftime("%d/%m/%Y")
@@ -2136,7 +2143,7 @@ class Playlist(MDScreen):
             self.dialog.dismiss()
             toast(text="Playlist Created")
 
-    def on_pre_enter(self):
+    def on_pre_enter(self):  # Function called just before entering the screen
         self.account = Database.acc_details()
         self.username = self.account[0]
         self.playlists = Database.playlists_info(username=self.username)
@@ -2208,7 +2215,7 @@ class Playlist(MDScreen):
                     text=self.playlists[i][4], font_style="Subtitle2", size_hint_y=0.1)
                 self.card.add_widget(self.play_date)
 
-    def playlist_songs(self, instance):
+    def playlist_songs(self, instance):  # Function to change to playlist_songs screen
         try:
             self.manager.get_screen(
                 "playlist_songs").playlist_id = int(instance.id)
@@ -2233,7 +2240,7 @@ class Playlist(MDScreen):
             self.manager.transition.direction = 'left'
 
 
-class Playlist_Songs(MDScreen):
+class Playlist_Songs(MDScreen):  # Initialising the Playlist Songs screen
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.playlist_id = None
@@ -2241,7 +2248,7 @@ class Playlist_Songs(MDScreen):
         self.play_name = None
         self.play_date = None
 
-    def on_pre_enter(self):
+    def on_pre_enter(self):  # Function called just before entering the screen
         self.clear_widgets()
         self.colours = Database.playlists_info(id=self.playlist_id)[5]
         self.hex = ast.literal_eval(self.colours)
@@ -2416,11 +2423,11 @@ class Playlist_Songs(MDScreen):
         )
         self.add_widget(self.nav_layout)
 
-    def to_main(self, dt):
+    def to_main(self, dt):  # Function to change to the main screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
-    def to_player(self, instance):
+    def to_player(self, instance):  # Function to change to the musicplayer
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
             self.manager.get_screen(
@@ -2430,26 +2437,26 @@ class Playlist_Songs(MDScreen):
         except:
             pass
 
-    def to_profile(self, dt):
+    def to_profile(self, dt):  # Function to change to the user account screen
         self.manager.current = 'profile'
         self.manager.transition.direction = 'left'
 
-    def to_settings(self, dt):
+    def to_settings(self, dt):  # Function to change to the settings screen
         self.manager.current = 'settings'
         self.manager.transition.direction = 'left'
 
-    def logout(self, dt):
+    def logout(self, dt):  # Function to logout
         pass
 
-    def to_playlist(self, dt):
+    def to_playlist(self, dt):  # Function to change to playlist screen
         self.manager.current = 'playlist'
         self.manager.transition.direction = 'left'
 
-    def to_chat(self, dt):
+    def to_chat(self, dt):  # Function to change to chat screen
         self.manager.current = 'chat'
         self.manager.transition.direction = 'left'
 
-    def musicplayer(self, instance):
+    def musicplayer(self, instance):  # Function to change to musicplayer
         self.index = int(instance.children[6].text)
         self.manager.get_screen('musicplayer').playlist = False
         self.new_index = self.manager.get_screen('musicplayer').index
@@ -2482,6 +2489,7 @@ class Playlist_Songs(MDScreen):
         self.manager.current = 'musicplayer'
         self.manager.transition.direction = 'left'
 
+    # Function to show dialog box to confirm playlist deletion
     def confirm_playlist_deletion(self, dt):
         self.main = MDBoxLayout(orientation="vertical",
                                 spacing="5dp",
@@ -2516,6 +2524,7 @@ class Playlist_Songs(MDScreen):
 
         self.dialog.open()
 
+    # Function to show dialoh box for playlist song deletion
     def confirm_playlist_song_deletion(self, instance):
         self.main = MDBoxLayout(orientation="vertical",
                                 spacing="5dp",
@@ -2548,14 +2557,14 @@ class Playlist_Songs(MDScreen):
 
         self.dialog.open()
 
-    def delete_playlist(self, dt):
+    def delete_playlist(self, dt):  # Function to delete playlist
         Database.delete_playlist(self.playlist_id)
         self.dialog.dismiss()
         self.manager.get_screen('playlist').deleted = True
         self.manager.current = 'playlist'
         toast(text="Playlist Deleted")
 
-    def song_delete(self, instance):
+    def song_delete(self, instance):  # Function to delete playlist song
         Database.delete_playlist_song(self.playlist_id, int(instance.id))
         self.layout2.clear_widgets()
         self.songs = Database.playlist_songs(id=self.playlist_id)
@@ -2590,7 +2599,7 @@ class Playlist_Songs(MDScreen):
 
         self.dialog.dismiss()
 
-    def sort_on_name(self, dt):
+    def sort_on_name(self, dt):  # Function to sort playlist songs in order of their name
         self.layout2.clear_widgets()
         if self.icon2.icon == 'sort-alphabetical-ascending':
             sort = 'song_name DESC'
@@ -2629,6 +2638,7 @@ class Playlist_Songs(MDScreen):
             self.delete_song.bind(on_press=self.song_delete)
             self.card.add_widget(self.delete_song)
 
+    # Function to sort playlist songs in order of their date of creation
     def sort_on_date(self, dt):
         self.layout2.clear_widgets()
         if self.icon3.icon == 'sort-calendar-ascending':
@@ -2668,6 +2678,7 @@ class Playlist_Songs(MDScreen):
             self.delete_song.bind(on_press=self.song_delete)
             self.card.add_widget(self.delete_song)
 
+    # Function to show dialog box for confirming playlist rename
     def confirm_playlist_rename(self, dt):
         self.rename_layout = MDTextField(
             hint_text="New Playlist Name",
@@ -2695,7 +2706,7 @@ class Playlist_Songs(MDScreen):
 
         self.dialog.open()
 
-    def rename_playlist(self, dt):
+    def rename_playlist(self, dt):  # Function to rename playlist
         if self.rename_layout.text != '' and len(self.rename_layout.text) <= 30:
             Database.playlist_edit(
                 playlist_id=self.playlist_id, rename=self.rename_layout.text)
@@ -2703,6 +2714,7 @@ class Playlist_Songs(MDScreen):
             self.play_name = self.rename_layout.text
             self.dialog.dismiss()
 
+    # Function to show dialog box for confirming playlist image edit
     def confirm_playlist_image(self, dt):
 
         self.upload_layout = MDBoxLayout(
@@ -2731,14 +2743,14 @@ class Playlist_Songs(MDScreen):
 
         self.dialog.open()
 
-    def choose(self, dt):
+    def choose(self, dt):  # Function to choose image
         self.play_img = filechooser.open_file()
         try:
             self.upload.background_normal = self.play_img[0]
         except:
             toast(text="Unable to load image")
 
-    def image_edit_playlist(self, dt):
+    def image_edit_playlist(self, dt):  # Function to edit image of the playlist
         if self.upload.background_normal != 'images/upload.png':
 
             Database.playlist_edit(
@@ -2757,12 +2769,12 @@ class Playlist_Songs(MDScreen):
 
             self.dialog.dismiss()
 
-    def go_back(self):
+    def go_back(self):  # Function to go back to previous screen
         self.manager.current = 'playlist'
         self.manager.transition.direction = 'right'
 
 
-class ChatUI(MDScreen):
+class ChatUI(MDScreen):  # Initialising the Chat Screen
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.counter = 1
@@ -2835,14 +2847,14 @@ class ChatUI(MDScreen):
         self.send_button.bind(on_press=self.send_user_message)
         self.add_widget(self.send_button)
 
-    def on_pre_enter(self):
+    def on_pre_enter(self):  # Function called just before entering the screen
         self.account = Database.acc_details()
 
-    def go_back(self, dt):
+    def go_back(self, dt):  # Function called to go back to the previous screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
-    def send_user_message(self, dt):
+    def send_user_message(self, dt):  # Function to send the user's message
         self.counter += 1
         self.text = self.text_input.text
         self.text_input.text = ''
@@ -2874,17 +2886,17 @@ class ChatUI(MDScreen):
         Thread(target=self.get_ai_message,
                name='AI_Message', daemon=True).start()
 
-    def get_texture_size(self, dt):
+    def get_texture_size(self, dt):  # Function to set the height of user's message card
         self.card2.height = self.text2.texture_size[1] + \
             2*self.text2.padding[1]
 
-    def move(self, dt):
+    def move(self, dt):  # Function to change cursor icon when on focus
         Window.set_system_cursor(cursor_name='hand')
 
-    def leave(self, dt):
+    def leave(self, dt):  # Function to change cursor icon when out of focus
         Window.set_system_cursor(cursor_name='arrow')
 
-    def get_ai_message(self):
+    def get_ai_message(self):  # Function to get response from AI
         try:
             AIChatBot.counter = 1
             self.ai_text = AIChatBot.output(text=self.text2.text).strip()
@@ -2898,7 +2910,7 @@ class ChatUI(MDScreen):
             ])
             Clock.schedule_once(self.send_ai_message)
 
-    def send_ai_message(self, dt):
+    def send_ai_message(self, dt):  # Function to send the response from AI
         self.counter += 1
         self.sub_layout5 = MDBoxLayout(
             padding=[8, 3, 2, 3],
@@ -2931,7 +2943,7 @@ class ChatUI(MDScreen):
         if self.value[0] == True:
             Clock.schedule_once(self.musicplayer)
 
-    def ai_texture_size(self, dt):
+    def ai_texture_size(self, dt):  # Function to set the height of AI's response card
         if '\n' in self.text.text:
             self.card.height = self.text.texture_size[1] + \
                 2*self.text.padding[1]
@@ -2939,13 +2951,14 @@ class ChatUI(MDScreen):
             if len(self.text.text) > 178:
                 self.card.height = f"{(len(self.text.text)/178)*110}dp"
 
+    # Function to resize the background gradient colour w.r.t screen size
     def resize(self, window, width, height):
         self.rect.size = Window.size
 
-    def Window_Size(self):
+    def Window_Size(self):  # Function to get the current window size
         return Window.size
 
-    def musicplayer(self, dt):
+    def musicplayer(self, dt):  # Function to change to musicplayer
         self.manager.get_screen('musicplayer').new = True
         self.manager.get_screen('musicplayer').prev_screen = 'chat'
         self.manager.get_screen(
@@ -2957,7 +2970,7 @@ class ChatUI(MDScreen):
         self.manager.transition.direction = 'left'
 
 
-class AIChatBot():
+class AIChatBot():  # Initialising the AIChatBot Class
     global agent_chain
     global new_memory
     global conversation
@@ -3002,20 +3015,20 @@ class AIChatBot():
                                    verbose=True, agent_kwargs={'prefix': prefix}, max_iterations=5)
 
     def output(text):
-        global screen_change
+        global screen_change  # Function to return AI Response
         screen_change = False
         output = agent_chain.run(input=text)
         return output
 
-    def output3():
+    def output3():  # Function which checks if the screen is to be changed to musicplayer
         return (screen_change, song_name, author)
 
-    def output4(value: bool):
+    def output4(value: bool):  # Function which shows the value of screen_change variable
         global screen_change
         screen_change = value
         return screen_change
 
-    def sqloutput(text):
+    def sqloutput(text):  # Function to get output by querying database using AI
         db = SQLDatabase.from_uri(
             'mysql+pymysql://root:@localhost/musicplayer', sample_rows_in_table_info=10)
         llm = ChatOpenAI(temperature=0.1, model='gpt-3.5-turbo-0613')
@@ -3034,6 +3047,7 @@ class AIChatBot():
 
         return f"Song {x} being played successfully"
 
+    # Function to get song info collected from database
     def song_infos(name_of_song: str, author_of_song: str):
         global song_name
         global author
@@ -3043,7 +3057,7 @@ class AIChatBot():
         screen_change = True
 
 
-class UserProfile(MDScreen):
+class UserProfile(MDScreen):  # Initialising UserProfile screen
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.account = None
@@ -3075,7 +3089,7 @@ class UserProfile(MDScreen):
         self.sub_layout1.add_widget(self.sub_layout3)
 
         self.icon1 = MDIconButton(icon='rename-outline', pos_hint={
-                                  'top': 1}, icon_size='23sp', md_bg_color=[0, 1, 1, 0.5], on_press=self.account_edit)
+                                  'top': 1}, icon_size='23sp', md_bg_color=[0, 1, 1, 0.5], on_press=self.account_edit_confirmation)
         self.sub_layout3.add_widget(self.icon1)
         self.icon2 = MDIconButton(icon='image-edit-outline', pos_hint={
                                   'top': 1}, icon_size='23sp', md_bg_color=[0, 1, 1, 0.5], on_press=self.confirm_user_image)
@@ -3158,11 +3172,11 @@ class UserProfile(MDScreen):
         )
         self.add_widget(self.nav_layout)
 
-    def to_main(self, dt):
+    def to_main(self, dt):  # Function to change to main screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
-    def to_player(self, instance):
+    def to_player(self, instance):  # Function to change to musicplayer
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
             self.manager.get_screen('musicplayer').prev_screen = 'profile'
@@ -3171,26 +3185,26 @@ class UserProfile(MDScreen):
         except:
             pass
 
-    def to_profile(self, dt):
+    def to_profile(self, dt):  # Function to change to user account screen
         self.manager.current = 'profile'
         self.manager.transition.direction = 'left'
 
-    def to_settings(self, dt):
+    def to_settings(self, dt):  # Function to change to settings screen
         self.manager.current = 'settings'
         self.manager.transition.direction = 'left'
 
-    def logout(self, dt):
+    def logout(self, dt):  # Function to logout
         pass
 
-    def to_playlist(self, dt):
+    def to_playlist(self, dt):  # Function to change to playlist screen
         self.manager.current = 'playlist'
         self.manager.transition.direction = 'left'
 
-    def to_chat(self, dt):
+    def to_chat(self, dt):  # Function to change to chat screen
         self.manager.current = 'chat'
         self.manager.transition.direction = 'left'
 
-    def on_pre_enter(self):
+    def on_pre_enter(self):  # Function called just before entering the screen
 
         self.account = self.manager.get_screen('main').account
 
@@ -3233,7 +3247,7 @@ class UserProfile(MDScreen):
                 self.card.bind(on_press=self.musicplayer)
                 self.sub_layout2.add_widget(self.card)
 
-    def musicplayer(self, instance):
+    def musicplayer(self, instance):  # Function to change to musicplayer screen
         s = instance.children[0].children[0].text
         song_name = s.split('[b]')[1].split('[/b]')[0]
         self.manager.get_screen('musicplayer').new = True
@@ -3245,7 +3259,8 @@ class UserProfile(MDScreen):
             self.manager.get_screen("musicplayer").sound.stop()
         self.manager.current = 'musicplayer'
 
-    def account_edit(self, dt):
+    # Function to show dialog box to change account details
+    def account_edit_confirmation(self, dt):
 
         self.dialog_layout = MDBoxLayout(orientation='vertical', pos_hint={
                                          'center_x': 0.5, 'center_y': 0.5}, height='200dp', spacing="10dp", size_hint_y=None)
@@ -3270,7 +3285,7 @@ class UserProfile(MDScreen):
             buttons=[
                 MDFlatButton(
                     text="CONFRIM",
-                    on_release=self.account_edit_confirmation
+                    on_release=self.edit_account
                 ),
                 MDFlatButton(
                     text="CANCEL",
@@ -3281,7 +3296,7 @@ class UserProfile(MDScreen):
 
         self.dialog.open()
 
-    def account_edit_confirmation(self, dt):
+    def edit_account(self, dt):  # Function to edit account details
         if self.username_edit.text != '' or self.email_edit.text != '' or self.password_edit.text != '':
             Database.account_edit(acc=self.account, username=(self.username_edit.text if self.username_edit.text != '' else None),
                                   email=(self.email_edit.text if self.email_edit.text != '' else None), password=(self.password_edit.text if self.password_edit.text != '' else None))
@@ -3294,6 +3309,7 @@ class UserProfile(MDScreen):
                 'main').nav_header.title = self.username.text
             self.manager.get_screen('main').nav_header.text = self.email.text
 
+    # Function to show dialog box to change user image
     def confirm_user_image(self, dt):
         self.upload = Button(background_normal=self.account[4],
                              on_press=self.choose, background_down='images/loading.png', pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint_y=None, height="300dp")
@@ -3317,14 +3333,14 @@ class UserProfile(MDScreen):
 
         self.dialog.open()
 
-    def choose(self, dt):
+    def choose(self, dt):  # Function to choose image
         try:
             self.play_img = filechooser.open_file()
             self.upload.background_normal = self.play_img[0]
         except:
             toast(text="Unable to load image")
 
-    def image_edit_user(self, dt):
+    def image_edit_user(self, dt):  # Function to edit user image
         if self.upload.background_normal != 'images/account.png':
 
             Database.account_edit(
@@ -3333,12 +3349,12 @@ class UserProfile(MDScreen):
 
             self.dialog.dismiss()
 
-    def go_back(self):
+    def go_back(self):  # Function to go back to the previous screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
 
-class Settings(MDScreen):
+class Settings(MDScreen):  # Initialising Settings screen
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -3488,11 +3504,11 @@ class Settings(MDScreen):
         )
         self.add_widget(self.nav_layout)
 
-    def to_main(self, dt):
+    def to_main(self, dt):  # Function to change to main screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
-    def to_player(self, instance):
+    def to_player(self, instance):  # Function to change to musicplayer
         try:
             self.manager.get_screen('musicplayer').music_icon_clicked = True
             self.manager.get_screen('musicplayer').prev_screen = 'settings'
@@ -3501,25 +3517,26 @@ class Settings(MDScreen):
         except:
             pass
 
-    def to_profile(self, dt):
+    def to_profile(self, dt):  # Function to change to user account screen
         self.manager.current = 'profile'
         self.manager.transition.direction = 'left'
 
-    def to_settings(self, dt):
+    def to_settings(self, dt):  # Function to change to settings screen
         self.manager.current = 'settings'
         self.manager.transition.direction = 'left'
 
-    def logout(self, dt):
+    def logout(self, dt):  # Function to logout
         pass
 
-    def to_playlist(self, dt):
+    def to_playlist(self, dt):  # Function to change to playlist screen
         self.manager.current = 'playlist'
         self.manager.transition.direction = 'left'
 
-    def to_chat(self, dt):
+    def to_chat(self, dt):  # Function to change to chat screen
         self.manager.current = 'chat'
         self.manager.transition.direction = 'left'
 
+    # Function to enable/disable recommendation button
     def ai_recommendations(self, dt):
         if self.listitem6icon.icon == 'toggle-switch':
             self.listitem6icon.icon = 'toggle-switch-off'
@@ -3543,7 +3560,7 @@ class Settings(MDScreen):
                 json.dump(data, f)
             toast("Turned On Assistant Recommendations")
 
-    def time_pick(self, dt):
+    def time_pick(self, dt):  # Function to pick time for sleep mode
         if self.listitem3icon.icon == 'timer-off':
             self.picker = MDTimePicker(size_hint=(0.5, 0.5), pos_hint={
                 'center_x': 0.5, 'center_y': 0.5})
@@ -3556,10 +3573,10 @@ class Settings(MDScreen):
             toast('Sleep Mode Off')
             self.listitem3icon.icon = 'timer-off'
 
-    def get_time(self, instance, time):
+    def get_time(self, instance, time):  # Function to get the time picked
         self.sleep_time = time
 
-    def check_time(self, dt):
+    def check_time(self, dt):  # Function to check the time until app is closed
         c = datetime.datetime.now()
         current_time = c.strftime('%H:%M:%S')
 
@@ -3571,7 +3588,7 @@ class Settings(MDScreen):
             toast("App Will Close in 10 seconds")
             Clock.schedule_once(lambda x: MDApp.get_running_app().stop(), 10)
 
-    def notif_config(self, dt):
+    def notif_config(self, dt):  # Function to enable/disable notifications
         if self.listitem8icon.icon == 'toggle-switch-off':
             with open("settings.json") as f:
                 data = json.load(f)
@@ -3593,19 +3610,19 @@ class Settings(MDScreen):
             self.listitem8icon.icon = 'toggle-switch-off'
             toast("Notifications Disabled")
 
-    def user_data(self, dt):
+    def user_data(self, dt):  # Function to get user account data stored in database
         with open(rf'C:\Users\pc\Desktop\ChorduceUserData.txt', 'a') as f:
             data = Database.acc_details()
             for i in data:
                 f.write(str(i)+"\n")
             toast("User Data Saved To Desktop")
 
-    def go_back(self):
+    def go_back(self):  # Function to go back to previous screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'right'
 
 
-class Lyrics(MDScreen):
+class Lyrics(MDScreen):  # Initialising Lyrics screen
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.not_found = False
@@ -3630,26 +3647,27 @@ class Lyrics(MDScreen):
                                    )
         self.add_widget(self.top_bar)
 
-    def on_pre_enter(self):
+    def on_pre_enter(self):  # Function called just before entering the screen
         Clock.schedule_once(self.lyric_height)
 
-    def lyric_height(self, dt):
+    def lyric_height(self, dt):  # Function to set the lyrics label height
         self.label.height = self.label.texture_size[1]
 
-    def go_back(self):
+    def go_back(self):  # Function to go back to the previous screen
         self.manager.current = 'main'
         self.manager.transition.direction = 'down'
 
 
-class spotify(MDApp):
-    def build(self):
+class Chorduce(MDApp):  # Initialising the Main Chorduce App
+    def build(self):  # Function to build the app
 
-        Database.connect()
-        self.icon = 'images/Chorduce icon.png'
-        self.title = "Chorduce"
-        self.theme_cls.theme_style = "Dark"
+        Database.connect()  # Connecting to the database
+        self.icon = 'images/Chorduce icon.png'  # Setting app icon
+        self.title = "Chorduce"  # Setting app title
+        self.theme_cls.theme_style = "Dark"  # Setting Dark Theme
         sm = MDScreenManager()
 
+        # Adding different screens to the app on startup
         sm.add_widget(LoginScreen(name='login'))
         sm.add_widget(RegistrationScreen(name='registration'))
         sm.add_widget(MusicPlayer(name='musicplayer'))
@@ -3659,4 +3677,4 @@ class spotify(MDApp):
 
 
 if __name__ == '__main__':
-    spotify().run()
+    Chorduce().run()  # Run the App
