@@ -1,3 +1,4 @@
+from langchain.tools import StructuredTool
 import time
 from datetime import datetime as dt
 from toastify import notify
@@ -10,7 +11,7 @@ from playsound import playsound
 from kivymd.uix.pickers import MDTimePicker
 from kivy.core.text import LabelBase
 import random
-from langchain import OpenAI, SQLDatabase, SQLDatabaseChain, HuggingFaceHub
+from langchain import SQLDatabase
 from langchain.utilities import SerpAPIWrapper
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import SQLDatabaseSequentialChain
@@ -225,15 +226,21 @@ class Database():  # Intialising Database Class
         except:
             return None
 
-    def playlists_info(username=None, id=None):  # Function to get info about playlists
+    # Function to get info about playlists
+    def playlists_info(username=None, id=None, play_name=None):
         try:
-            if username:
+            if username and play_name == None:
                 cursor.execute(
                     "SELECT * FROM playlists WHERE user = %s", (username, ))
                 result = cursor.fetchall()
                 return result
             elif id:
                 cursor.execute("SELECT * FROM playlists WHERE id = %s", (id, ))
+                result = cursor.fetchone()
+                return result
+            elif play_name and username:
+                cursor.execute(
+                    f"SELECT * FROM playlists WHERE name = '{play_name}' AND user = '{username}'")
                 result = cursor.fetchone()
                 return result
         except:
@@ -244,7 +251,7 @@ class Database():  # Intialising Database Class
             cursor.execute(
                 "INSERT INTO playlists (name, image, user, created, colour) VALUES (%s, %s, %s, %s, %s)", (name, image, user, date, colours))
             cnx.commit()
-        except:
+        except Exception:
             raise Exception
 
     def playlist_songs(id, order_by=None):  # Function to get songs in playlists
@@ -265,12 +272,11 @@ class Database():  # Intialising Database Class
     # Function to add songs to playlist
     def add_playlist_song(playlist_id, song_id, song_name):
         today = date.today().strftime("%Y/%m/%d")
-
         try:
             cursor.execute(
                 "INSERT INTO playlist_songs (playlist_id, song_id, song_name, created) VALUES (%s, %s, %s, %s)", (playlist_id, song_id, song_name, today))
             cnx.commit()
-        except Exception:
+        except Exception as e:
             raise Exception
 
     def delete_playlist(playlist_id):  # Function to delete a playlist
@@ -2922,7 +2928,7 @@ class ChatUI(MDScreen):  # Initialising the Chat Screen
                              size_hint=(None, None), background_down='images/loading.png', valign='center', border=(0, 0, 0, 0), pos_hint={'top': 0.9})
 
         self.sub_layout5.add_widget(self.upload)
-        self.card = MDCard(size_hint=(None, None), style='elevated',
+        self.card = MDCard(size_hint=(None, None),
                            height="100dp", width="1500dp", radius=20, elevation=0, md_bg_color="#00FFFFFF", pos_hint={'top': 0.9})
         self.sub_layout5.add_widget(self.card)
 
@@ -3000,17 +3006,29 @@ class AIChatBot():  # Initialising the AIChatBot Class
             func=lambda text: AIChatBot.sqloutput(text),
             description="strictly use it when user wants to listen to a song. The Final Answer should be a message saying 'playing song'"
         ),
+        Tool(
+            name="create playlist",
+            func=lambda string: AIChatBot.playlist_parser(string),
+            description="""strictly use it when user wants to create a playlist. The input to this should be in the format 'name, image', name is name of playlist and image is path of image. 
+            If no name is given set name as per your wish,  if no image is given set image to 'images/upload.png'"""
+        ),
+        Tool(
+            name="add song to playlist",
+            func=lambda string: AIChatBot.playlist_song_parser(string),
+            description="""strictly use it when user wants to add song to playlist. The input format must be 'playlist_name, the type/name of song user wants to listen'. 
+            if no playlist_name given ask the user to specify a playlist, if no name/type of song given then 'playlist_name, a random song from playlist' should be the input"""
+        ),
         WriteFileTool(),
         ReadFileTool(),
         MoveFileTool()
     ]
 
-    prefix = "You are Aeris, A multifunctional chatbot that tends to user's queries"
+    prefix = "You are Euphonius, A multifunctional chatbot that tends to user's queries. Perform the actions correctly"
 
     memory = ConversationBufferMemory(
         memory_key="chat_history")
     llm = ChatOpenAI(temperature=0,
-                     model="gpt-3.5-turbo-0613", max_tokens=1000)
+                     model="gpt-3.5-turbo-0613", max_tokens=3000)
     agent_chain = initialize_agent(tools, llm, agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION, early_stopping_method='generate',
                                    verbose=True, agent_kwargs={'prefix': prefix}, max_iterations=5)
 
@@ -3055,6 +3073,72 @@ class AIChatBot():  # Initialising the AIChatBot Class
         song_name = name_of_song
         author = author_of_song
         screen_change = True
+
+    def playlist_parser(string: str):  # Function to parse input for creating playlist
+        if ',' in string:
+            a, b = string.split(',')
+            return AIChatBot.create_playlist(a.strip(), b.strip())
+        else:
+            return AIChatBot.create_playlist(string, None)
+
+    # Function to create playlist using AI
+    def create_playlist(name: str, image: str = None):
+        if image == None or os.path.isfile(image) == False:
+            image = 'images/upload.png'
+        try:
+            color_thief = ColorThief(image)
+            palette = color_thief.get_palette(color_count=2)
+            l = []
+
+            for i in palette:
+                l.append('#%02x%02x%02x' % i)
+            colour = str(l)
+        except:
+            colour = str(["#000000", "#00007c"])
+        today = date.today()
+        t = today.strftime("%d/%m/%Y")
+        user = Database.acc_details()[0]
+        try:
+            Database.create_playlist(
+                name=name, image=image, user=user, date=t, colours=colour)
+            return f"Playlist {name} created successfully"
+        except Exception as e:
+            return "Unable to create playlist"
+
+    # Function to parse input for adding song to playlist
+    def playlist_song_parser(string: str):
+        if ',' in string:
+            a, b = string.split(',')
+            return AIChatBot.add_playlist_song(a.strip(), b.strip())
+        else:
+            a, b = string, 'a random song'
+            return AIChatBot.add_playlist_song(a.strip(), b)
+
+    # Function to add song to playlist using AI
+    def add_playlist_song(name: str, text: str):
+        user = Database.acc_details()[0]
+        try:
+            playlist_id = Database.playlists_info(
+                username=user, play_name=name)[0]
+        except:
+            return "Playlist {name} Not Found"
+
+        db = SQLDatabase.from_uri(
+            'mysql+pymysql://root:@localhost/musicplayer', sample_rows_in_table_info=10)
+        llm = ChatOpenAI(temperature=0.1, model='gpt-3.5-turbo-0613')
+        agent = SQLDatabaseSequentialChain.from_llm(llm=llm,
+                                                    database=db, return_direct=True)
+        out = agent.run(
+            f"Fetch the id and name of the song as per the following request: {text}")
+        y = ast.literal_eval(out)
+        if len(y) == 0 or len(y[0]) == 0:
+            return "Couldnt add the required song"
+        else:
+            song_id = y[0][0]
+            song_name = y[0][1]
+            Database.add_playlist_song(
+                playlist_id=playlist_id, song_id=song_id, song_name=song_name)
+            return f"Song {song_name} added to playlist {name}"
 
 
 class UserProfile(MDScreen):  # Initialising UserProfile screen
