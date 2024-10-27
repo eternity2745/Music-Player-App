@@ -1,6 +1,6 @@
 # Chorduce
-**Chorduce** is a Music Player App fully made in python with the help of Kivy and KivyMD
-A MySQL database was used to store data of the user, musics, playlists etc. The music files where stored locally and the database was used to fetch them.
+**Chorduce** is a Music Player App fully made in python with the help of Kivy and KivyMD.
+A MySQL database was used to store data of the user, musics, playlists etc. The music files were stored locally and the database was used to fetch them.
 The App also has AI Features along with a voice assistant to enhance the ease of use.
 
 ## App Features
