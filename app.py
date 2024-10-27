@@ -2996,7 +2996,7 @@ class AIChatBot():  # Initialising the AIChatBot Class
     song_name = None
     author = None
 
-    dburl = 'mysql+pymysql://root:@localhost/musicplayer'
+    dburl = ''
     db = SQLDatabase.from_uri(dburl)
 
     search = SerpAPIWrapper()
