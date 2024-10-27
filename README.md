@@ -43,5 +43,5 @@ The App also has AI Features along with a voice assistant to enhance the ease of
 <img src = "https://github.com/user-attachments/assets/6549d905-eb0a-48c3-ba07-d1fcce1d2a1b" width = "45%">
 </p>
 
-[!NOTE]
-The App is not made to fit properly in all types of screens
+> [!NOTE]
+> The App is not made to fit properly in all types of screens
