@@ -85,11 +85,11 @@ account = ("", "", "")
 state = 0
 logged_in = False
 
-os.environ['OPENAI_API_KEY'] = "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"
-os.environ['SERPAPI_API_KEY'] = "edad3081de97572290efcd436f7b82de90f0bef23ccf17de73a283d9d77d1bce"
+os.environ['OPENAI_API_KEY'] = ""
+os.environ['SERPAPI_API_KEY'] = ""
 
 repo_id = "google/flan-t5-xl"
-os.environ['HUGGINGFACEHUB_API_TOKEN'] = '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'
+os.environ['HUGGINGFACEHUB_API_TOKEN'] = ''
 
 
 class Database():  # Intialising Database Class
@@ -369,14 +369,6 @@ class LoginScreen(MDScreen, MDFloatLayout):  # Initialising Login Screen
 
         self.login_form.add_widget(self.create_account_button)
         self.add_widget(self.login_form)
-
-    '''def icon(self, instance):  # Changing password icon
-        if instance.icon_right == 'eye-off':
-            instance.icon_right = 'eye-on'
-            instance.password = False
-        else:
-            instance.icon_right = 'eye-off'
-            instance.password = True'''
 
     def login(self):  # Function to login
         status = Database.login(email=self.email.text,
@@ -1593,7 +1585,7 @@ class MusicPlayer(MDScreen):  # Initialising the music player screen
 
     def get_lyrics(self):  # Function to get lyrics of current song ( if available )
         if self.sound:
-            genius = lyricsgenius.Genius('IGWgsLHybP3wO96mxe-sH-TUiTNOEKXB8SS1udS4TMuk_ovQUJ74-IkGc9s-1EkhZ5MfsjL5sfc-8ih_SqAmYA',
+            genius = lyricsgenius.Genius('',
                                          skip_non_songs=True, excluded_terms=["(Remix)", "(Live)"],
                                          remove_section_headers=True)
 
@@ -1613,7 +1605,7 @@ class MusicPlayer(MDScreen):  # Initialising the music player screen
             except:
                 try:
                     extract_lyrics = SongLyrics(
-                        'AIzaSyCEDrw4PLZvE0iEhoYo6FpNq_QqgofLWfs', 'd34c8f76177674713')
+                        '', '')
 
                     data = extract_lyrics.get_lyrics(
                         f"{self.song_title.text} By {self.song_author.text} Lyrics")
@@ -3046,9 +3038,9 @@ class AIChatBot():  # Initialising the AIChatBot Class
                                    verbose=True, agent_kwargs={'prefix': prefix}, max_iterations=5)
 
     db = SQLDatabase.from_uri(
-        'mysql+pymysql://root:@localhost/musicplayer', sample_rows_in_table_info=10)
+        '', sample_rows_in_table_info=10)
     sql_llm = ChatOpenAI(temperature=0.1, model='gpt-3.5-turbo-0613',
-                         openai_api_key='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')
+                         openai_api_key='')
     sql_agent = SQLDatabaseSequentialChain.from_llm(llm=sql_llm,
                                                     database=db, return_direct=True)
 
@@ -3144,7 +3136,7 @@ class AIChatBot():  # Initialising the AIChatBot Class
             return "Playlist {name} Not Found"
 
         db = SQLDatabase.from_uri(
-            'mysql+pymysql://root:@localhost/musicplayer', sample_rows_in_table_info=10)
+            '', sample_rows_in_table_info=10)
         llm = ChatOpenAI(temperature=0.1, model='gpt-3.5-turbo-0613')
         agent = SQLDatabaseSequentialChain.from_llm(llm=llm,
                                                     database=db, return_direct=True)
