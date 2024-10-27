@@ -85,7 +85,7 @@ account = ("", "", "")
 state = 0
 logged_in = False
 
-os.environ['OPENAI_API_KEY'] = "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"
+os.environ['OPENAI_API_KEY'] = "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"
 os.environ['SERPAPI_API_KEY'] = "edad3081de97572290efcd436f7b82de90f0bef23ccf17de73a283d9d77d1bce"
 
 repo_id = "google/flan-t5-xl"
@@ -106,7 +106,7 @@ class Database():  # Intialising Database Class
         )
         cursor = cnx.cursor()
 
-    def create_account(username, email, phone, password):  # Function to create account
+    def create_account(username, email, phone, password, image):  # Function to create account
         id = int(str((random.random())).split('.')[1])
         today = date.today()
         t = today.strftime("%Y-%m-%d")
@@ -220,11 +220,11 @@ class Database():  # Intialising Database Class
     def song_match(text):  # Function to search song
         try:
             cursor.execute(
-                f"SELECT * FROM songs WHERE title LIKE '{text}%' OR author LIKE '%{text}%' OR image LIKE '%{text}%' OR language LIKE '%{text}%' OR genre LIKE '%{text}%' GROUP BY title LIMIT 20")
+                f"SELECT * FROM songs WHERE title LIKE '{text}%' OR composer LIKE '%{text}%' OR image LIKE '%{text}%' OR language LIKE '%{text}%' OR genre LIKE '%{text}%' GROUP BY title LIMIT 20")
             result = cursor.fetchall()
             return result
         except:
-            return None
+            pass
 
     # Function to get info about playlists
     def playlists_info(username=None, id=None, play_name=None):
@@ -328,9 +328,9 @@ class Database():  # Intialising Database Class
         return l
 
     def recommendations(username):  # Function to get song recommendations
-        cursor.execute(f"""select s.id, s.title, s.author, s.image, s.mp3, s.language, s.genre from songs s, listening_history lh WHERE s.id NOT IN (SELECT DISTINCT song_id FROM listening_history WHERE username = '{username}') 
+        cursor.execute(f"""select s.id, s.title, s.composer, s.image, s.mp3, s.language, s.genre from songs s, listening_history lh WHERE s.id NOT IN (SELECT DISTINCT song_id FROM listening_history WHERE username = '{username}') 
                        AND ((s.language, s.genre) IN (SELECT language, genre FROM listening_history WHERE username = '{username}' GROUP BY genre) 
-                       OR s.author IN (SELECT DISTINCT author FROM listening_history WHERE username = '{username}')) GROUP BY s.title ORDER BY RAND() LIMIT 8""")
+                       OR s.composer IN (SELECT DISTINCT composer FROM listening_history WHERE username = '{username}')) GROUP BY s.title ORDER BY RAND() LIMIT 8""")
         return cursor.fetchall()
 
 
@@ -351,10 +351,10 @@ class LoginScreen(MDScreen, MDFloatLayout):  # Initialising Login Screen
         self.app_img = Image(source='images/Chorduce icon.png')
         self.login_form.add_widget(self.app_img)
 
-        self.email = MDTextField(mode='rectangle',
-                                 hint_text="Email", helper_text="Invalid Email", helper_text_mode='on_error', line_anim=True, size_hint=(0.8, 0.5), pos_hint={'center_x': 0.5, 'top': 1})
-        self.password = MDTextField(hint_text="Password", password=True, mode='rectangle',
-                                    helper_text="Invalid Password", helper_text_mode='on_error', line_anim=True, size_hint=(0.8, 0.5), pos_hint={'center_x': 0.5, 'top': 1}, icon_right='eye-off')
+        self.email = MDTextField(mode='rectangle', icon_left='email',
+                                 hint_text="Email", helper_text_mode='on_error', line_anim=True, size_hint=(0.8, 0.5), pos_hint={'center_x': 0.5, 'top': 1})
+        self.password = MDTextField(hint_text="Password", password=True, mode='rectangle', helper_text_mode='on_error',
+                                    line_anim=True, size_hint=(0.8, 0.5), pos_hint={'center_x': 0.5, 'top': 1}, icon_left='key')
 
         self.login_form.add_widget(self.email)
         self.login_form.add_widget(self.password)
@@ -370,13 +370,13 @@ class LoginScreen(MDScreen, MDFloatLayout):  # Initialising Login Screen
         self.login_form.add_widget(self.create_account_button)
         self.add_widget(self.login_form)
 
-    def icon(self, instance):  # Changing password icon
+    '''def icon(self, instance):  # Changing password icon
         if instance.icon_right == 'eye-off':
             instance.icon_right = 'eye-on'
             instance.password = False
         else:
             instance.icon_right = 'eye-off'
-            instance.password = True
+            instance.password = True'''
 
     def login(self):  # Function to login
         status = Database.login(email=self.email.text,
@@ -692,7 +692,7 @@ class MainScreen(MDScreen):  # Initialising the MainScreen
         self.skip_prev = MDIconButton(
             icon='skip-previous', halign="center", disabled=True)
         self.skip_prev.bind(
-            on_press=self.previous, on_breh=self.enter, on_leave=self.leave)
+            on_press=self.previous, on_enter=self.enter, on_leave=self.leave)
         self.sub_layout2_1_1.add_widget(self.skip_prev)
         self.play_pause = MDIconButton(icon='play', halign="center", icon_color=[
             0, 0, 0, 1], theme_icon_color="Custom", md_bg_color="white", disabled=True)
@@ -711,7 +711,7 @@ class MainScreen(MDScreen):  # Initialising the MainScreen
                              font_style="Subtitle2", halign="right")
         self.sub_layout5_2.add_widget(self.start)
         self.slider = MDSlider(
-            size_hint_x=0.7, hint=False)
+            size_hint_x=0.7, hint=False, disabled=True)
         self.sub_layout5_2.add_widget(self.slider)
         self.end = MDLabel(text="00:00", size_hint_x=0.1,
                            font_style="Subtitle2")
@@ -774,7 +774,7 @@ class MainScreen(MDScreen):  # Initialising the MainScreen
         self.nav_menu.add_widget(self.nav_divider)
 
         self.chatbot = MDNavigationDrawerItem(
-            text='Jaadhu', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
+            text='Euphonious', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
         self.nav_menu.add_widget(self.chatbot)
         self.chatbot.bind(on_release=self.to_chat,
                           on_enter=self.enter, on_leave=self.leave)
@@ -958,7 +958,7 @@ class MainScreen(MDScreen):  # Initialising the MainScreen
         l = [1, 15, 35, 50, 75, 100]
         self.account = Database.acc_details()
         try:
-            with open("settings.json") as f:
+            with open("Settings/settings.json") as f:
                 data = json.load(f)
                 recs = data['Recommendations']
             if self.counter in l and recs == 'Enabled':
@@ -984,6 +984,7 @@ class MainScreen(MDScreen):  # Initialising the MainScreen
             self.counter += 1
 
         elif self.counter > 0 and self.sound != None:
+            self.slider.disabled = False
             self.mute.disabled = False
             self.counter += 1
             self.img.source = self.song_image
@@ -1287,6 +1288,7 @@ class MusicPlayer(MDScreen):  # Initialising the music player screen
                 self.played_songs.append(self.song)
                 self.index = -1
             self.prev_button.disabled = False
+            self.manager.get_screen('main').skip_prev.disabled = False
             self.screen_switched = False
             self.already_started = True
             self.sn = self.song[1]
@@ -1560,12 +1562,12 @@ class MusicPlayer(MDScreen):  # Initialising the music player screen
             self.stop = True
         self.already_started = False
 
-        with open("settings.json") as f:
+        '''with open("Settings/settings.json") as f:
             data = json.load(f)
             notifs = data['Notifications']
         if Window.focus == False and notifs == 'Enabled':
             notify(BodyText=self.song_author.text, TitleText=self.song_title.text,
-                   AppName='Chorduce', ImagePath=self.song_image.source)
+                   AppName='Chorduce', ImagePath=self.song_image.source)'''
         Window.set_title(f'Chorduce - {self.song_title.text}')
 
         if self.manager.get_screen('main').sound != None:
@@ -1729,7 +1731,7 @@ class SearchScreen(MDScreen):  # Initialising the SearchScreen
         self.nav_menu.add_widget(self.nav_divider)
 
         self.chatbot = MDNavigationDrawerItem(
-            text='Jaadhu', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
+            text='Euphonious', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
         self.nav_menu.add_widget(self.chatbot)
         self.chatbot.bind(on_release=self.to_chat)
 
@@ -1846,8 +1848,8 @@ class SearchScreen(MDScreen):  # Initialising the SearchScreen
                     self.sugg_songs.bind(on_release=self.musicplayer)
             else:
                 self.list.clear_widgets()
-        except Exception as e:
-            raise e
+        except:
+            pass
 
     def go_back(self):  # Function to return to previous screen
         self.manager.current = 'main'
@@ -1971,7 +1973,7 @@ class Playlist(MDScreen):  # Initialising the Playlist screen
         self.nav_menu.add_widget(self.nav_divider)
 
         self.chatbot = MDNavigationDrawerItem(
-            text='Jaadhu', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
+            text='Euphonious', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
         self.nav_menu.add_widget(self.chatbot)
         self.chatbot.bind(on_release=self.to_chat)
 
@@ -2381,7 +2383,7 @@ class Playlist_Songs(MDScreen):  # Initialising the Playlist Songs screen
         self.nav_menu.add_widget(self.nav_divider)
 
         self.chatbot = MDNavigationDrawerItem(
-            text='Jaadhu', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
+            text='Euphonious', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
         self.nav_menu.add_widget(self.chatbot)
         self.chatbot.bind(on_release=self.to_chat)
 
@@ -2494,6 +2496,20 @@ class Playlist_Songs(MDScreen):  # Initialising the Playlist Songs screen
             self.manager.get_screen("musicplayer").sound.stop()
         self.manager.current = 'musicplayer'
         self.manager.transition.direction = 'left'
+
+    def colour_extractor(self, path):
+        try:
+            color_thief = ColorThief(path)
+            palette = color_thief.get_palette(color_count=2)
+            l = []
+
+            for i in palette:
+                l.append('#%02x%02x%02x' % i)
+
+        except:
+            l = ["#000000", "#00007c"]
+
+        return l
 
     # Function to show dialog box to confirm playlist deletion
     def confirm_playlist_deletion(self, dt):
@@ -2723,18 +2739,14 @@ class Playlist_Songs(MDScreen):  # Initialising the Playlist Songs screen
     # Function to show dialog box for confirming playlist image edit
     def confirm_playlist_image(self, dt):
 
-        self.upload_layout = MDBoxLayout(
-            orientation='vertical', size_hint_y=None, height="200dp", width="25dp")
-
         self.upload = Button(background_normal='images/upload.png',
-                             on_press=self.choose, background_down='images/loading.png')
-        self.upload_layout.add_widget(self.upload)
+                             on_press=self.choose, background_down='images/loading.png', pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint_y=None, height="300dp")
 
         self.dialog = MDDialog(
             title="Create Playlist",
             type="custom",
             auto_dismiss=False,
-            content_cls=self.upload_layout,
+            content_cls=self.upload,
             buttons=[
                 MDFlatButton(
                     text="CONFIRM",
@@ -2831,7 +2843,7 @@ class ChatUI(MDScreen):  # Initialising the Chat Screen
                            height="100dp", width="1500dp", radius=20, elevation=0, md_bg_color=get_color_from_hex('#00FFFFFF'))
         self.sub_layout3.add_widget(self.card)
 
-        self.text = MDLabel(text="Heya my friend, I am Euphonius. How can I help you today?", size_hint=(
+        self.text = MDLabel(text="Heya my friend, I am Euphonious. How can I help you today?", size_hint=(
             1, 1), bold=True, font_style="H4", italic=True, valign='top', padding=[15, 0], height="100dp", halign='left', markup=True)
         self.card.add_widget(self.text)
 
@@ -2985,6 +2997,7 @@ class AIChatBot():  # Initialising the AIChatBot Class
     global screen_change
     global song_name
     global author
+    global sql_agent
     memory_list = []
     counter = 0
     screen_change = False
@@ -3002,21 +3015,23 @@ class AIChatBot():  # Initialising the AIChatBot Class
             description="useful for when you need to answer questions about current events. You should ask targeted questions",
         ),
         Tool(
-            name="get song details",
+            name="play song",
             func=lambda text: AIChatBot.sqloutput(text),
-            description="strictly use it when user wants to listen to a song. The Final Answer should be a message saying 'playing song'"
+            description="strictly use it when user wants to listen to a song. As soon as you get a positive observation display the success message 'playing song song_name'"
         ),
         Tool(
             name="create playlist",
             func=lambda string: AIChatBot.playlist_parser(string),
-            description="""strictly use it when user wants to create a playlist. The input to this should be in the format 'name, image', name is name of playlist and image is path of image. 
-            If no name is given set name as per your wish,  if no image is given set image to 'images/upload.png'"""
+            description="""strictly use it only when user wants to create a playlist. The input to this should be in the format 'name, image', name is name of playlist and image is path of image. 
+            If no name is given set name as per your wish, if no image is given set image to 'images/upload.png'. Do not add songs to playlist unless/until user has specifically mentioned about it.
+            The final output should 'Successfuly created the playlist playlist_name' only"""
         ),
         Tool(
-            name="add song to playlist",
+            name="add new song to playlist",
             func=lambda string: AIChatBot.playlist_song_parser(string),
-            description="""strictly use it when user wants to add song to playlist. The input format must be 'playlist_name, the type/name of song user wants to listen'. 
-            if no playlist_name given ask the user to specify a playlist, if no name/type of song given then 'playlist_name, a random song from playlist' should be the input"""
+            description="""strictly use it only when user wants to add song to playlist. The input format must be 'playlist_name, the type/name of song user wants to listen'. 
+            if no playlist_name given ask the user to specify a playlist, if no name/type of song given then 'playlist_name, a random song from playlist' should be the input. Answer based on observation
+            Remember to not to use this command unless/until user has asked to add a song to the playlist."""
         ),
         WriteFileTool(),
         ReadFileTool(),
@@ -3025,17 +3040,23 @@ class AIChatBot():  # Initialising the AIChatBot Class
 
     prefix = "You are Euphonius, A multifunctional chatbot that tends to user's queries. Perform the actions correctly"
 
-    memory = ConversationBufferMemory(
-        memory_key="chat_history")
     llm = ChatOpenAI(temperature=0,
                      model="gpt-3.5-turbo-0613", max_tokens=3000)
     agent_chain = initialize_agent(tools, llm, agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION, early_stopping_method='generate',
                                    verbose=True, agent_kwargs={'prefix': prefix}, max_iterations=5)
 
+    db = SQLDatabase.from_uri(
+        'mysql+pymysql://root:@localhost/musicplayer', sample_rows_in_table_info=10)
+    sql_llm = ChatOpenAI(temperature=0.1, model='gpt-3.5-turbo-0613',
+                         openai_api_key='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')
+    sql_agent = SQLDatabaseSequentialChain.from_llm(llm=sql_llm,
+                                                    database=db, return_direct=True)
+
     def output(text):
         global screen_change  # Function to return AI Response
         screen_change = False
         output = agent_chain.run(input=text)
+
         return output
 
     def output3():  # Function which checks if the screen is to be changed to musicplayer
@@ -3047,12 +3068,10 @@ class AIChatBot():  # Initialising the AIChatBot Class
         return screen_change
 
     def sqloutput(text):  # Function to get output by querying database using AI
-        db = SQLDatabase.from_uri(
-            'mysql+pymysql://root:@localhost/musicplayer', sample_rows_in_table_info=10)
-        llm = ChatOpenAI(temperature=0.1, model='gpt-3.5-turbo-0613')
-        agent = SQLDatabaseSequentialChain.from_llm(llm=llm,
-                                                    database=db, return_direct=True)
-        out = agent.run(text)
+        agent_chain.max_iterations = 2
+        out = sql_agent.run(
+            f"Fetch a song according to the following request (always use order by rand() along with user's request): {text}")
+        print(out)
         y = ast.literal_eval(out)
         if len(y) == 0 or len(y[0]) == 0:
             return "Couldnt fetch the required song"
@@ -3062,6 +3081,7 @@ class AIChatBot():  # Initialising the AIChatBot Class
         else:
             x = y[0][0]
             AIChatBot.song_infos(y[0][0], y[0][1])
+        agent_chain.max_iterations = 5
 
         return f"Song {x} being played successfully"
 
@@ -3209,7 +3229,7 @@ class UserProfile(MDScreen):  # Initialising UserProfile screen
         self.nav_menu.add_widget(self.nav_divider)
 
         self.chatbot = MDNavigationDrawerItem(
-            text='Jaadhu', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
+            text='Euphonious', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
         self.nav_menu.add_widget(self.chatbot)
         self.chatbot.bind(on_release=self.to_chat)
 
@@ -3540,7 +3560,7 @@ class Settings(MDScreen):  # Initialising Settings screen
         self.nav_menu.add_widget(self.nav_divider)
 
         self.chatbot = MDNavigationDrawerItem(
-            text='Jaadhu', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
+            text='Euphonious', icon="robot", text_color="#FFFFFF", icon_color="#FFFFFF", selected_color="#FFFFFF")
         self.nav_menu.add_widget(self.chatbot)
         self.chatbot.bind(on_release=self.to_chat)
 
@@ -3624,23 +3644,23 @@ class Settings(MDScreen):  # Initialising Settings screen
     def ai_recommendations(self, dt):
         if self.listitem6icon.icon == 'toggle-switch':
             self.listitem6icon.icon = 'toggle-switch-off'
-            with open("settings.json") as f:
+            with open("Settings/settings.json") as f:
                 data = json.load(f)
 
                 data["Recommendations"] = "Disabled"
 
-            with open("settings.json", "w") as f:
+            with open("Settings/settings.json", "w") as f:
                 json.dump(data, f)
 
             toast("Turned off Assistant Recommendations")
         else:
             self.listitem6icon.icon = 'toggle-switch'
-            with open("settings.json") as f:
+            with open("Settings/settings.json") as f:
                 data = json.load(f)
 
                 data["Recommendations"] = "Enabled"
 
-            with open("settings.json", "w") as f:
+            with open("Settings/settings.json", "w") as f:
                 json.dump(data, f)
             toast("Turned On Assistant Recommendations")
 
@@ -3674,22 +3694,22 @@ class Settings(MDScreen):  # Initialising Settings screen
 
     def notif_config(self, dt):  # Function to enable/disable notifications
         if self.listitem8icon.icon == 'toggle-switch-off':
-            with open("settings.json") as f:
+            with open("Settings/settings.json") as f:
                 data = json.load(f)
 
                 data["Notifications"] = "Enabled"
 
-            with open("settings.json", "w") as f:
+            with open("Settings/settings.json", "w") as f:
                 json.dump(data, f)
             self.listitem8icon.icon = 'toggle-switch'
             toast("Notifications Enabled")
         else:
-            with open("settings.json") as f:
+            with open("Settings/settings.json") as f:
                 data = json.load(f)
 
                 data["Notifications"] = "Disabled"
 
-            with open("settings.json", "w") as f:
+            with open("Settings/settings.json", "w") as f:
                 json.dump(data, f)
             self.listitem8icon.icon = 'toggle-switch-off'
             toast("Notifications Disabled")
